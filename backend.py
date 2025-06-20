@@ -1,48 +1,9 @@
 #!/usr/bin/env python3
 """
-AI Chat to Twitter - All-in-One Full Backend
-This single file includes OAuth and Anthropic integration
-Just run: python backend_allinone.py
+AI Chat to Twitter - Backend Server
+OAuth and AI integration for Twitter/X sharing
 """
 
-# Auto-install dependencies
-import subprocess
-import sys
-
-
-def install(package):
-    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-
-
-# Check and install required packages
-try:
-    import fastapi
-    import httpx
-    import uvicorn
-    import pydantic
-    import dotenv
-    import openai
-    import replicate
-    import aiofiles
-except ImportError:
-    print("Installing required packages...")
-    for pkg in [
-        "fastapi",
-        "uvicorn[standard]",
-        "httpx",
-        "pydantic",
-        "python-dotenv",
-        "typing-extensions",
-        "openai",
-        "replicate",
-        "aiofiles",
-        "pillow",
-    ]:
-        install(pkg)
-    print("Packages installed! Please run the script again.")
-    sys.exit(0)
-
-# Now import everything
 import os
 import asyncio
 import base64
@@ -64,15 +25,27 @@ except ImportError:
 
 import httpx
 import uvicorn
-import openai
-import replicate
-import aiofiles
-from PIL import Image
-from fastapi import FastAPI, HTTPException, Request, Query, File, UploadFile
+from fastapi import FastAPI, HTTPException, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
+
+# Optional imports
+try:
+    import openai
+    OPENAI_AVAILABLE = True
+except ImportError:
+    print("Warning: OpenAI not available. Image generation will be disabled.")
+    openai = None
+    OPENAI_AVAILABLE = False
+
+try:
+    from PIL import Image
+    PIL_AVAILABLE = True
+except ImportError:
+    print("Warning: PIL not available. Some image features will be disabled.")
+    PIL_AVAILABLE = False
 
 # Load environment variables
 load_dotenv()
@@ -83,14 +56,13 @@ CONFIG = {
     "TWITTER_API_SECRET": os.getenv("TWITTER_API_SECRET", ""),
     "ANTHROPIC_API_KEY": os.getenv("ANTHROPIC_API_KEY", ""),
     "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY", ""),
-    "REPLICATE_API_TOKEN": os.getenv("REPLICATE_API_TOKEN", ""),
     "BASE_URL": os.getenv("BASE_URL", "http://localhost:8000"),
     "PORT": int(os.getenv("PORT", "8000")),
 }
 
 # Initialize OpenAI client if configured
 openai_client = None
-if CONFIG["OPENAI_API_KEY"]:
+if CONFIG["OPENAI_API_KEY"] and OPENAI_AVAILABLE:
     openai_client = openai.OpenAI(api_key=CONFIG["OPENAI_API_KEY"])
 
 # Create .env template if it doesn't exist
@@ -107,9 +79,6 @@ ANTHROPIC_API_KEY=
 
 # Get OpenAI API key from https://platform.openai.com
 OPENAI_API_KEY=
-
-# Get Replicate API token from https://replicate.com
-REPLICATE_API_TOKEN=
 
 # Server settings
 BASE_URL=http://localhost:8000
@@ -139,14 +108,6 @@ class GenerateImageRequest(BaseModel):
     size: Literal["1024x1024", "1792x1024", "1024x1792"] = "1024x1024"
     quality: Literal["standard", "hd"] = "standard"
     style: Literal["vivid", "natural"] = "vivid"
-
-
-class GenerateVideoRequest(BaseModel):
-    prompt: str
-    model: Literal["veo-3", "stable-video"] = "veo-3"
-    duration: int = Field(5, ge=1, le=30)
-    resolution: Literal["720p", "1080p", "4k"] = "720p"
-    aspect_ratio: Literal["16:9", "9:16", "1:1"] = "16:9"
 
 
 class AddEffectRequest(BaseModel):
@@ -430,6 +391,13 @@ async def download_image(url: str) -> Optional[bytes]:
 
 async def generate_image_openai(request: GenerateImageRequest) -> Dict[str, Any]:
     """Generate image using OpenAI DALL-E"""
+    if not OPENAI_AVAILABLE:
+        return {
+            "success": False,
+            "error": "OpenAI library not available",
+            "message": "Please install openai: pip install openai"
+        }
+    
     if not openai_client:
         raise HTTPException(status_code=500, detail="OpenAI API not configured")
     
@@ -457,57 +425,6 @@ async def generate_image_openai(request: GenerateImageRequest) -> Dict[str, Any]
             "message": "Failed to generate image"
         }
 
-
-async def generate_video_replicate(request: GenerateVideoRequest) -> Dict[str, Any]:
-    """Generate video using Replicate (stable-video-diffusion or other models)"""
-    if not CONFIG["REPLICATE_API_TOKEN"]:
-        raise HTTPException(status_code=500, detail="Replicate API not configured")
-    
-    try:
-        # Map resolution to dimensions
-        dimensions = {
-            "720p": {"width": 1280, "height": 720},
-            "1080p": {"width": 1920, "height": 1080},
-            "4k": {"width": 3840, "height": 2160}
-        }
-        
-        dim = dimensions[request.resolution]
-        
-        # Adjust dimensions based on aspect ratio
-        if request.aspect_ratio == "9:16":
-            dim["width"], dim["height"] = dim["height"], dim["width"]
-        elif request.aspect_ratio == "1:1":
-            dim["width"] = dim["height"] = min(dim["width"], dim["height"])
-        
-        # Use Stable Video Diffusion from Replicate
-        output = replicate.run(
-            "stability-ai/stable-video-diffusion:3f0457e4619daac51203dedb472816fd4af51f3149fa7a9e0b5ffcf1b8172438",
-            input={
-                "input_image": request.prompt,  # This would need to be an image URL
-                "frames": min(request.duration * 8, 25),  # Approximate frames
-                "sizing_strategy": "maintain_aspect_ratio",
-                "frames_per_second": 8,
-                "motion_bucket_id": 127,
-                "cond_aug": 0.02,
-                "decoding_t": 7,
-                "seed": 0
-            }
-        )
-        
-        return {
-            "success": True,
-            "video_url": output,
-            "model": "stable-video-diffusion",
-            "duration": request.duration,
-            "resolution": request.resolution,
-            "aspect_ratio": request.aspect_ratio
-        }
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e),
-            "message": "Failed to generate video"
-        }
 
 
 async def add_effect_to_image(request: AddEffectRequest) -> Dict[str, Any]:
@@ -610,10 +527,8 @@ async def home():
         "✅ Configured" if CONFIG["ANTHROPIC_API_KEY"] else "❌ Not configured"
     )
     openai_status = (
-        "✅ Configured" if CONFIG["OPENAI_API_KEY"] else "❌ Not configured"
-    )
-    replicate_status = (
-        "✅ Configured" if CONFIG["REPLICATE_API_TOKEN"] else "❌ Not configured"
+        "❌ Library not available" if not OPENAI_AVAILABLE 
+        else ("✅ Configured" if CONFIG["OPENAI_API_KEY"] else "❌ Not configured")
     )
 
     return f"""
@@ -648,6 +563,7 @@ async def home():
             <li><code>POST /api/generate-video</code> - Generate videos with Replicate</li>
             <li><code>POST /api/add-effect</code> - Add effects to images</li>
             <li><code>POST /api/upload-image</code> - Upload images</li>
+            <li><code>POST /api/send-email</code> - Send via email</li>
             <li><code>GET /oauth/login</code> - Start OAuth (if configured)</li>
         </ul>
         
@@ -912,7 +828,7 @@ if __name__ == "__main__":
     Twitter API: {'✅ Configured' if CONFIG['TWITTER_API_KEY'] else '❌ Not configured - Add to .env file'}
     Anthropic AI: {'✅ Configured' if CONFIG['ANTHROPIC_API_KEY'] else '❌ Not configured - Add to .env file'}
     OpenAI API: {'✅ Configured' if CONFIG['OPENAI_API_KEY'] else '❌ Not configured - Add to .env file'}
-    Replicate API: {'✅ Configured' if CONFIG['REPLICATE_API_TOKEN'] else '❌ Not configured - Add to .env file'}
+    Replicate API: {'❌ Library not available' if not REPLICATE_AVAILABLE else ('✅ Configured' if CONFIG['REPLICATE_API_TOKEN'] else '❌ Not configured - Add to .env file')}
     
     API Docs: {CONFIG['BASE_URL']}/docs
     Test Examples: {CONFIG['BASE_URL']}/api/test-condense

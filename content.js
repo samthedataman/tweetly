@@ -411,6 +411,10 @@ class AITwitterExtension {
             <span class="btn-icon">🐦</span>
             <span class="btn-label">Tweet</span>
           </button>
+          <button class="twitter-control-btn email-btn">
+            <span class="btn-icon">📧</span>
+            <span class="btn-label">Email</span>
+          </button>
           <button class="twitter-control-btn sms-btn">
             <span class="btn-icon">💬</span>
             <span class="btn-label">SMS</span>
@@ -422,6 +426,10 @@ class AITwitterExtension {
           <button class="twitter-control-btn style-btn">
             <span class="btn-icon">✨</span>
             <span class="btn-label">Style</span>
+          </button>
+          <button class="twitter-control-btn image-btn">
+            <span class="btn-icon">🎨</span>
+            <span class="btn-label">Image</span>
           </button>
           <button class="twitter-control-btn substack-btn">
             <span class="btn-icon">📰</span>
@@ -448,9 +456,11 @@ class AITwitterExtension {
 
       // Add event handlers for hover panel buttons
       const tweetBtn = controlsDiv.querySelector('.tweet-btn');
+      const emailBtn = controlsDiv.querySelector('.email-btn');
       const smsBtn = controlsDiv.querySelector('.sms-btn');
       const condenseBtn = controlsDiv.querySelector('.condense-btn');
       const styleBtn = controlsDiv.querySelector('.style-btn');
+      const imageBtn = controlsDiv.querySelector('.image-btn');
       const substackBtn = controlsDiv.querySelector('.substack-btn');
       const mediumBtn = controlsDiv.querySelector('.medium-btn');
       const styleDropdown = controlsDiv.querySelector('.style-dropdown');
@@ -476,6 +486,14 @@ class AITwitterExtension {
         e.preventDefault();
         const text = getText();
         this.showDialog(text, 'Share on X', 'Select a style to condense', text);
+      });
+
+      // Email button handler
+      emailBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const text = getText();
+        this.showEmailDialog(text);
       });
 
       // SMS button handler
@@ -525,6 +543,14 @@ class AITwitterExtension {
           styleDropdown.classList.add('hidden');
           styleSelect.value = '';
         }
+      });
+      
+      // Image button handler
+      imageBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const text = getText();
+        this.showImageGenerationDialog(text);
       });
       
       // Substack button handler
@@ -1407,6 +1433,247 @@ class AITwitterExtension {
 
     // Focus title input
     titleInput.focus();
+
+    // ESC key to close
+    document.addEventListener('keydown', function escHandler(e) {
+      if (e.key === 'Escape') {
+        closeDialog();
+        document.removeEventListener('keydown', escHandler);
+      }
+    });
+  }
+
+  // Show email dialog
+  async showEmailDialog(text) {
+    // Remove any existing dialog
+    const existingDialog = document.getElementById('ai-twitter-dialog');
+    if (existingDialog) existingDialog.remove();
+    
+    const existingOverlay = document.querySelector('.ai-twitter-overlay');
+    if (existingOverlay) existingOverlay.remove();
+
+    // Create overlay and dialog
+    const overlay = document.createElement('div');
+    overlay.className = 'ai-twitter-overlay';
+
+    const dialog = document.createElement('div');
+    dialog.id = 'ai-twitter-dialog';
+    dialog.className = `ai-twitter-dialog ai-twitter-dialog-${this.platform}`;
+    
+    dialog.innerHTML = `
+      <div class="dialog-header">
+        <h3>📧 Send via Email</h3>
+        <p class="dialog-subtitle">Share this conversation via email</p>
+      </div>
+      
+      <div class="original-message-preview">
+        <div class="preview-label">Message content:</div>
+        <div class="preview-content">${this.truncatePreview(text, 200)}</div>
+      </div>
+      
+      <div class="email-form">
+        <input type="email" class="email-input" placeholder="Recipient email address" />
+        <input type="text" class="subject-input" placeholder="Email subject" value="AI Chat Conversation" />
+      </div>
+      
+      <div class="dialog-footer">
+        <div class="dialog-buttons">
+          <button class="dialog-btn cancel-btn">Cancel</button>
+          <button class="dialog-btn send-email-btn" style="background: #4285f4;">
+            <span>Send Email</span>
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+    document.body.appendChild(dialog);
+
+    // Get elements
+    const emailInput = dialog.querySelector('.email-input');
+    const subjectInput = dialog.querySelector('.subject-input');
+    const cancelBtn = dialog.querySelector('.cancel-btn');
+    const sendBtn = dialog.querySelector('.send-email-btn');
+
+    // Button handlers
+    const closeDialog = () => {
+      overlay.remove();
+      dialog.remove();
+    };
+
+    cancelBtn.addEventListener('click', closeDialog);
+    overlay.addEventListener('click', closeDialog);
+
+    sendBtn.addEventListener('click', async () => {
+      const email = emailInput.value;
+      const subject = subjectInput.value;
+      
+      if (!email) {
+        emailInput.style.borderColor = '#e0245e';
+        return;
+      }
+
+      try {
+        const response = await fetch(`${this.apiUrl}/api/send-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to_email: email,
+            subject: subject,
+            text: text
+          })
+        });
+
+        const result = await response.json();
+        if (result.mailto_link) {
+          window.location.href = result.mailto_link;
+        }
+        closeDialog();
+      } catch (error) {
+        console.error('Email error:', error);
+        // Fallback to mailto
+        const mailto = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
+        window.location.href = mailto;
+        closeDialog();
+      }
+    });
+
+    // Focus email input
+    emailInput.focus();
+
+    // ESC key to close
+    document.addEventListener('keydown', function escHandler(e) {
+      if (e.key === 'Escape') {
+        closeDialog();
+        document.removeEventListener('keydown', escHandler);
+      }
+    });
+  }
+
+  // Show image generation dialog
+  async showImageGenerationDialog(text) {
+    // Remove any existing dialog
+    const existingDialog = document.getElementById('ai-twitter-dialog');
+    if (existingDialog) existingDialog.remove();
+    
+    const existingOverlay = document.querySelector('.ai-twitter-overlay');
+    if (existingOverlay) existingOverlay.remove();
+
+    // Create overlay and dialog
+    const overlay = document.createElement('div');
+    overlay.className = 'ai-twitter-overlay';
+
+    const dialog = document.createElement('div');
+    dialog.id = 'ai-twitter-dialog';
+    dialog.className = `ai-twitter-dialog ai-twitter-dialog-${this.platform}`;
+    
+    dialog.innerHTML = `
+      <div class="dialog-header">
+        <h3>🎨 Generate Image</h3>
+        <p class="dialog-subtitle">Create an AI image from this conversation</p>
+      </div>
+      
+      <div class="original-message-preview">
+        <div class="preview-label">Based on:</div>
+        <div class="preview-content">${this.truncatePreview(text, 150)}</div>
+      </div>
+      
+      <div class="image-form">
+        <textarea class="image-prompt" placeholder="Describe the image you want to generate..." rows="3">${text.substring(0, 200)}</textarea>
+        <div class="image-options">
+          <select class="image-size">
+            <option value="1024x1024">Square (1024x1024)</option>
+            <option value="1792x1024">Landscape (1792x1024)</option>
+            <option value="1024x1792">Portrait (1024x1792)</option>
+          </select>
+          <select class="image-style">
+            <option value="vivid">Vivid</option>
+            <option value="natural">Natural</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="generated-image-container" style="display: none;">
+        <img class="generated-image" />
+        <button class="download-image-btn">Download</button>
+      </div>
+      
+      <div class="dialog-footer">
+        <div class="dialog-buttons">
+          <button class="dialog-btn cancel-btn">Cancel</button>
+          <button class="dialog-btn generate-btn" style="background: #10a37f;">
+            <span>Generate Image</span>
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+    document.body.appendChild(dialog);
+
+    // Get elements
+    const promptArea = dialog.querySelector('.image-prompt');
+    const sizeSelect = dialog.querySelector('.image-size');
+    const styleSelect = dialog.querySelector('.image-style');
+    const imageContainer = dialog.querySelector('.generated-image-container');
+    const generatedImg = dialog.querySelector('.generated-image');
+    const downloadBtn = dialog.querySelector('.download-image-btn');
+    const cancelBtn = dialog.querySelector('.cancel-btn');
+    const generateBtn = dialog.querySelector('.generate-btn');
+
+    // Button handlers
+    const closeDialog = () => {
+      overlay.remove();
+      dialog.remove();
+    };
+
+    cancelBtn.addEventListener('click', closeDialog);
+    overlay.addEventListener('click', closeDialog);
+
+    generateBtn.addEventListener('click', async () => {
+      const prompt = promptArea.value;
+      if (!prompt) return;
+
+      generateBtn.disabled = true;
+      generateBtn.innerHTML = '<span>Generating...</span>';
+
+      try {
+        const response = await fetch(`${this.apiUrl}/api/generate-image`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: prompt,
+            size: sizeSelect.value,
+            style: styleSelect.value,
+            model: 'dall-e-3'
+          })
+        });
+
+        const result = await response.json();
+        if (result.image_url) {
+          generatedImg.src = result.image_url;
+          imageContainer.style.display = 'block';
+          generateBtn.innerHTML = '<span>Generate Another</span>';
+          
+          // Download button handler
+          downloadBtn.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.href = result.image_url;
+            link.download = 'ai-generated-image.png';
+            link.click();
+          });
+        }
+      } catch (error) {
+        console.error('Image generation error:', error);
+        generateBtn.innerHTML = '<span>Generate Image</span>';
+      } finally {
+        generateBtn.disabled = false;
+      }
+    });
+
+    // Focus prompt
+    promptArea.focus();
+    promptArea.select();
 
     // ESC key to close
     document.addEventListener('keydown', function escHandler(e) {

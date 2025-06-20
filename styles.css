@@ -582,6 +582,113 @@
   transform: translateY(0);
 }
 
+/* Email dialog styles */
+.email-form {
+  margin: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.email-input,
+.subject-input {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  font-size: 16px;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  box-sizing: border-box;
+}
+
+.email-input:focus,
+.subject-input:focus {
+  border-color: #4285f4;
+  outline: none;
+}
+
+.send-email-btn {
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Image generation dialog styles */
+.image-form {
+  margin: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.image-prompt {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  font-size: 16px;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.image-options {
+  display: flex;
+  gap: 12px;
+}
+
+.image-size,
+.image-style {
+  flex: 1;
+  padding: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
+.generated-image-container {
+  margin: 16px 24px;
+  text-align: center;
+}
+
+.generated-image {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.download-image-btn {
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.download-image-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.generate-btn {
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 /* Article dialog styles */
 .article-options {
   margin: 16px 24px;
