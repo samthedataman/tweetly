@@ -1582,13 +1582,9 @@ class AITwitterExtension {
         <textarea class="image-prompt" placeholder="Describe the image you want to generate..." rows="3">${text.substring(0, 200)}</textarea>
         <div class="image-options">
           <select class="image-size">
-            <option value="1024x1024">Square (1024x1024)</option>
-            <option value="1792x1024">Landscape (1792x1024)</option>
-            <option value="1024x1792">Portrait (1024x1792)</option>
-          </select>
-          <select class="image-style">
-            <option value="vivid">Vivid</option>
-            <option value="natural">Natural</option>
+            <option value="1024x1024">Large (1024x1024)</option>
+            <option value="512x512">Medium (512x512)</option>
+            <option value="256x256">Small (256x256)</option>
           </select>
         </div>
       </div>
@@ -1614,7 +1610,6 @@ class AITwitterExtension {
     // Get elements
     const promptArea = dialog.querySelector('.image-prompt');
     const sizeSelect = dialog.querySelector('.image-size');
-    const styleSelect = dialog.querySelector('.image-style');
     const imageContainer = dialog.querySelector('.generated-image-container');
     const generatedImg = dialog.querySelector('.generated-image');
     const downloadBtn = dialog.querySelector('.download-image-btn');
@@ -1644,8 +1639,7 @@ class AITwitterExtension {
           body: JSON.stringify({
             prompt: prompt,
             size: sizeSelect.value,
-            style: styleSelect.value,
-            model: 'dall-e-3'
+            model: 'gpt-image-1'
           })
         });
 

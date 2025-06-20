@@ -27,13 +27,14 @@ import httpx
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
 # Optional imports
 try:
     import openai
+
     OPENAI_AVAILABLE = True
 except ImportError:
     print("Warning: OpenAI not available. Image generation will be disabled.")
@@ -42,6 +43,7 @@ except ImportError:
 
 try:
     from PIL import Image
+
     PIL_AVAILABLE = True
 except ImportError:
     print("Warning: PIL not available. Some image features will be disabled.")
@@ -104,10 +106,8 @@ class ProcessTextRequest(BaseModel):
 
 class GenerateImageRequest(BaseModel):
     prompt: str
-    model: Literal["dall-e-3", "dall-e-2"] = "dall-e-3"
-    size: Literal["1024x1024", "1792x1024", "1024x1792"] = "1024x1024"
-    quality: Literal["standard", "hd"] = "standard"
-    style: Literal["vivid", "natural"] = "vivid"
+    model: Literal["gpt-image-1"] = "gpt-image-1"
+    size: Literal["1024x1024", "512x512", "256x256"] = "1024x1024"
 
 
 class AddEffectRequest(BaseModel):
@@ -390,94 +390,177 @@ async def download_image(url: str) -> Optional[bytes]:
 
 
 async def generate_image_openai(request: GenerateImageRequest) -> Dict[str, Any]:
-    """Generate image using OpenAI DALL-E"""
+    """Generate image using OpenAI"""
     if not OPENAI_AVAILABLE:
         return {
             "success": False,
             "error": "OpenAI library not available",
-            "message": "Please install openai: pip install openai"
+            "message": "Please install openai: pip install openai",
         }
-    
+
     if not openai_client:
         raise HTTPException(status_code=500, detail="OpenAI API not configured")
-    
+
     try:
+        # Use gpt-image-1 as requested
+        model_to_use = request.model  # Use the model from request (gpt-image-1)
+        
+        # Sizes supported by gpt-image-1
+        valid_sizes = ["256x256", "512x512", "1024x1024"]
+        size_to_use = request.size if request.size in valid_sizes else "1024x1024"
+        
+        print(f"Generating image with model: {model_to_use}, size: {size_to_use}")
+        
+        # Generate image - gpt-image-1 doesn't support response_format parameter
         response = openai_client.images.generate(
-            model=request.model,
+            model=model_to_use,
             prompt=request.prompt,
-            size=request.size,
-            quality=request.quality,
-            style=request.style,
+            size=size_to_use,
             n=1
         )
         
-        return {
-            "success": True,
-            "image_url": response.data[0].url,
-            "revised_prompt": getattr(response.data[0], 'revised_prompt', request.prompt),
-            "model": request.model,
-            "size": request.size
-        }
+        # Check if we got a valid response
+        if response.data and len(response.data) > 0:
+            image_url = response.data[0].url
+            
+            # Try to get b64_json directly from response if available
+            image_data = None
+            if hasattr(response.data[0], 'b64_json') and response.data[0].b64_json:
+                image_data = response.data[0].b64_json
+            elif image_url:
+                # Download image and convert to base64 if URL is provided
+                try:
+                    image_bytes = await download_image(image_url)
+                    if image_bytes:
+                        image_data = base64.b64encode(image_bytes).decode()
+                except Exception as e:
+                    print(f"Error downloading generated image: {e}")
+            
+            return {
+                "success": True,
+                "image_url": image_url,
+                "image_data": image_data,  # Base64 encoded image
+                "model": model_to_use,
+                "size": size_to_use,
+                "prompt": request.prompt,
+            }
+        else:
+            return {
+                "success": False,
+                "error": "No image data returned from API",
+                "message": "The API did not return any image data",
+            }
+            
     except Exception as e:
+        print(f"OpenAI API Error: {str(e)}")
         return {
             "success": False,
             "error": str(e),
-            "message": "Failed to generate image"
+            "message": f"Failed to generate image: {str(e)}",
         }
-
 
 
 async def add_effect_to_image(request: AddEffectRequest) -> Dict[str, Any]:
     """Add effects to image using OpenAI"""
     if not openai_client:
         raise HTTPException(status_code=500, detail="OpenAI API not configured")
-    
+
     try:
         # Download the image
         image_bytes = await download_image(request.image_url)
         if not image_bytes:
             raise HTTPException(status_code=400, detail="Failed to download image")
-        
+
         # Create temp file
         with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
             tmp_file.write(image_bytes)
             temp_path = tmp_file.name
-        
+
         # Effect prompts
         effect_prompts = {
             "tophat": "Add a stylish black top hat to this person's head, keeping their face exactly the same",
             "monocle": "Add a golden monocle over one eye, keeping the person's face exactly the same",
             "synthwave": "Transform into hyperrealistic synthwave style with neon purple/pink/cyan colors, dramatic lighting, and cyberpunk atmosphere while keeping the person's face identical",
-            "retro": "Apply a retro 80s aesthetic with vintage colors and effects while keeping the person recognizable"
+            "retro": "Apply a retro 80s aesthetic with vintage colors and effects while keeping the person recognizable",
         }
-        
+
         prompt = effect_prompts.get(request.effect, effect_prompts["tophat"])
-        
-        # Use OpenAI image edit
+
+        # Use OpenAI gpt-image-1 for editing
         with open(temp_path, "rb") as image_file:
-            response = openai_client.images.edit(
-                image=image_file,
-                prompt=prompt,
-                n=1,
-                size="1024x1024"
-            )
-        
+            # Check if we need to add a logo for certain effects
+            if request.effect == "tophat":
+                # Try to download PulseChain logo for tophat effect
+                logo_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/PulseChainLogoTransparent.png/1200px-PulseChainLogoTransparent.png"
+                logo_bytes = await download_image(logo_url)
+                
+                if logo_bytes:
+                    # Save logo to temp file
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as logo_file:
+                        logo_file.write(logo_bytes)
+                        logo_path = logo_file.name
+                    
+                    # Multi-image edit with logo
+                    with open(logo_path, "rb") as logo_file:
+                        prompt = """Take the profile picture and transform it into a hyperrealistic synthwave style while ensuring it still looks exactly like the original person.
+
+                        Key elements:
+                        - Add a stylish black top hat with the PulseChain logo (image 2) attached prominently on the front
+                        - Add a golden monocle over one eye
+                        - Add a lit cigar with glowing ember
+                        - The person's face and features must look identical to the original
+
+                        Cyberpunk/Synthwave style:
+                        - Vibrant neon purple/pink/cyan color palette
+                        - Dramatic lighting with glow effects around edges
+                        - Retro-futuristic cyberpunk atmosphere
+                        - Subtle grid pattern in background
+                        - The final image should be professional quality and look just like the original person in amazing synthwave style"""
+                        
+                        response = openai_client.images.edit(
+                            model="gpt-image-1",
+                            image=[image_file, logo_file],
+                            prompt=prompt,
+                            size="1024x1024",
+                        )
+                    
+                    # Clean up logo file
+                    os.unlink(logo_path)
+                else:
+                    # Single image approach
+                    response = openai_client.images.edit(
+                        model="gpt-image-1",
+                        image=image_file,
+                        prompt=prompt,
+                        n=1,
+                        size="1024x1024",
+                    )
+            else:
+                # Standard single image edit
+                response = openai_client.images.edit(
+                    model="gpt-image-1",
+                    image=image_file,
+                    prompt=prompt,
+                    n=1,
+                    size="1024x1024",
+                )
+
         # Clean up
         os.unlink(temp_path)
-        
+
         return {
             "success": True,
             "image_url": response.data[0].url,
             "effect": request.effect,
-            "original_url": request.image_url
+            "original_url": request.image_url,
         }
     except Exception as e:
-        if 'temp_path' in locals() and os.path.exists(temp_path):
+        if "temp_path" in locals() and os.path.exists(temp_path):
             os.unlink(temp_path)
         return {
             "success": False,
             "error": str(e),
-            "message": "Failed to add effect to image"
+            "message": "Failed to add effect to image",
         }
 
 
@@ -487,10 +570,10 @@ async def prepare_email_link(request: SendEmailRequest) -> Dict[str, Any]:
         # Encode the email parameters
         subject = urllib.parse.quote(request.subject)
         body = urllib.parse.quote(request.text)
-        
+
         # Create mailto link
         mailto_link = f"mailto:{request.to_email}?subject={subject}&body={body}"
-        
+
         # Also prepare a shareable email template
         email_template = f"""
 To: {request.to_email}
@@ -501,20 +584,16 @@ Subject: {request.subject}
 ---
 Sent via AI Chat to Twitter Extension
         """
-        
+
         return {
             "success": True,
             "mailto_link": mailto_link,
             "email_template": email_template,
             "to": request.to_email,
-            "subject": request.subject
+            "subject": request.subject,
         }
     except Exception as e:
-        return {
-            "success": False,
-            "error": str(e),
-            "message": "Failed to prepare email"
-        }
+        return {"success": False, "error": str(e), "message": "Failed to prepare email"}
 
 
 # Routes
@@ -527,7 +606,8 @@ async def home():
         "✅ Configured" if CONFIG["ANTHROPIC_API_KEY"] else "❌ Not configured"
     )
     openai_status = (
-        "❌ Library not available" if not OPENAI_AVAILABLE 
+        "❌ Library not available"
+        if not OPENAI_AVAILABLE
         else ("✅ Configured" if CONFIG["OPENAI_API_KEY"] else "❌ Not configured")
     )
 
@@ -551,7 +631,6 @@ async def home():
             <p>Twitter API: {twitter_status}</p>
             <p>Anthropic AI: {anthropic_status}</p>
             <p>OpenAI API: {openai_status}</p>
-            <p>Replicate API: {replicate_status}</p>
             <p>Server URL: {CONFIG['BASE_URL']}</p>
         </div>
         
@@ -559,10 +638,8 @@ async def home():
         <ul>
             <li><code>POST /api/process-text</code> - Process text with AI</li>
             <li><code>GET /api/styles</code> - Get available styles</li>
-            <li><code>POST /api/generate-image</code> - Generate images with DALL-E</li>
-            <li><code>POST /api/generate-video</code> - Generate videos with Replicate</li>
+            <li><code>POST /api/generate-image</code> - Generate images with gpt-image-1</li>
             <li><code>POST /api/add-effect</code> - Add effects to images</li>
-            <li><code>POST /api/upload-image</code> - Upload images</li>
             <li><code>POST /api/send-email</code> - Send via email</li>
             <li><code>GET /oauth/login</code> - Start OAuth (if configured)</li>
         </ul>
@@ -618,20 +695,30 @@ async def get_styles():
 
 @app.post("/api/generate-image")
 async def generate_image(request: GenerateImageRequest):
-    """Generate an image using OpenAI DALL-E"""
+    """Generate an image using OpenAI"""
     result = await generate_image_openai(request)
     if not result["success"]:
         raise HTTPException(status_code=500, detail=result["message"])
     return result
 
 
-@app.post("/api/generate-video")
-async def generate_video(request: GenerateVideoRequest):
-    """Generate a video using Replicate"""
-    result = await generate_video_replicate(request)
+@app.post("/api/generate-image-bytes")
+async def generate_image_bytes(request: GenerateImageRequest):
+    """Generate an image and return as PNG bytes"""
+    result = await generate_image_openai(request)
     if not result["success"]:
         raise HTTPException(status_code=500, detail=result["message"])
-    return result
+    
+    # If we have base64 data, convert to bytes and return as PNG
+    if result.get("image_data"):
+        image_bytes = base64.b64decode(result["image_data"])
+        return StreamingResponse(
+            io.BytesIO(image_bytes),
+            media_type="image/png",
+            headers={"Content-Disposition": f"attachment; filename=generated-image.png"}
+        )
+    else:
+        raise HTTPException(status_code=500, detail="No image data available")
 
 
 @app.post("/api/add-effect")
@@ -641,36 +728,6 @@ async def add_effect(request: AddEffectRequest):
     if not result["success"]:
         raise HTTPException(status_code=500, detail=result["message"])
     return result
-
-
-@app.post("/api/upload-image")
-async def upload_image(file: UploadFile = File(...)):
-    """Upload an image and return its URL"""
-    try:
-        # Validate file type
-        if not file.content_type.startswith("image/"):
-            raise HTTPException(status_code=400, detail="File must be an image")
-        
-        # Read file content
-        content = await file.read()
-        
-        # Create a unique filename
-        filename = f"{uuid.uuid4().hex}_{file.filename}"
-        
-        # In production, you would upload to a cloud storage service
-        # For now, we'll return a base64 data URL
-        base64_image = base64.b64encode(content).decode()
-        data_url = f"data:{file.content_type};base64,{base64_image}"
-        
-        return {
-            "success": True,
-            "url": data_url,
-            "filename": filename,
-            "content_type": file.content_type,
-            "size": len(content)
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/send-email")
@@ -827,8 +884,7 @@ if __name__ == "__main__":
     
     Twitter API: {'✅ Configured' if CONFIG['TWITTER_API_KEY'] else '❌ Not configured - Add to .env file'}
     Anthropic AI: {'✅ Configured' if CONFIG['ANTHROPIC_API_KEY'] else '❌ Not configured - Add to .env file'}
-    OpenAI API: {'✅ Configured' if CONFIG['OPENAI_API_KEY'] else '❌ Not configured - Add to .env file'}
-    Replicate API: {'❌ Library not available' if not REPLICATE_AVAILABLE else ('✅ Configured' if CONFIG['REPLICATE_API_TOKEN'] else '❌ Not configured - Add to .env file')}
+    OpenAI API: {'❌ Library not available' if not OPENAI_AVAILABLE else ('✅ Configured' if CONFIG['OPENAI_API_KEY'] else '❌ Not configured - Add to .env file')}
     
     API Docs: {CONFIG['BASE_URL']}/docs
     Test Examples: {CONFIG['BASE_URL']}/api/test-condense
@@ -836,9 +892,9 @@ if __name__ == "__main__":
     Enhanced Features:
     - Advanced condensing system prompts
     - Multiple style options with specialized prompts
-    - Image generation with DALL-E 3
-    - Video generation with Replicate
+    - Image generation with gpt-image-1
     - Image effects (tophat, monocle, synthwave, retro)
+    - Email sending functionality
     - Hashtag/mention preservation
     - Character counting and validation
     
