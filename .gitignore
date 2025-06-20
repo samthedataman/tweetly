@@ -1,1 +1,13 @@
 .env
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.ENV/
+virtualenv/
+*.virtualenv
+__pycache__/
+*.py[cod]
+*$py.class
