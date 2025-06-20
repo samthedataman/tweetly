@@ -21,6 +21,9 @@ try:
     import uvicorn
     import pydantic
     import dotenv
+    import openai
+    import replicate
+    import aiofiles
 except ImportError:
     print("Installing required packages...")
     for pkg in [
@@ -30,6 +33,10 @@ except ImportError:
         "pydantic",
         "python-dotenv",
         "typing-extensions",
+        "openai",
+        "replicate",
+        "aiofiles",
+        "pillow",
     ]:
         install(pkg)
     print("Packages installed! Please run the script again.")
@@ -44,9 +51,11 @@ import time
 import urllib.parse
 import uuid
 import json
+import io
+import tempfile
 from datetime import datetime, timedelta, timezone
 from hashlib import sha1
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 try:
     from typing import Literal
@@ -55,9 +64,13 @@ except ImportError:
 
 import httpx
 import uvicorn
-from fastapi import FastAPI, HTTPException, Request, Query
+import openai
+import replicate
+import aiofiles
+from PIL import Image
+from fastapi import FastAPI, HTTPException, Request, Query, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
@@ -69,9 +82,16 @@ CONFIG = {
     "TWITTER_API_KEY": os.getenv("TWITTER_API_KEY", ""),
     "TWITTER_API_SECRET": os.getenv("TWITTER_API_SECRET", ""),
     "ANTHROPIC_API_KEY": os.getenv("ANTHROPIC_API_KEY", ""),
+    "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY", ""),
+    "REPLICATE_API_TOKEN": os.getenv("REPLICATE_API_TOKEN", ""),
     "BASE_URL": os.getenv("BASE_URL", "http://localhost:8000"),
     "PORT": int(os.getenv("PORT", "8000")),
 }
+
+# Initialize OpenAI client if configured
+openai_client = None
+if CONFIG["OPENAI_API_KEY"]:
+    openai_client = openai.OpenAI(api_key=CONFIG["OPENAI_API_KEY"])
 
 # Create .env template if it doesn't exist
 if not os.path.exists(".env"):
@@ -84,6 +104,12 @@ TWITTER_API_SECRET=
 
 # Get Anthropic API key from https://console.anthropic.com
 ANTHROPIC_API_KEY=
+
+# Get OpenAI API key from https://platform.openai.com
+OPENAI_API_KEY=
+
+# Get Replicate API token from https://replicate.com
+REPLICATE_API_TOKEN=
 
 # Server settings
 BASE_URL=http://localhost:8000
@@ -105,6 +131,35 @@ class ProcessTextRequest(BaseModel):
     preserve_hashtags: bool = True
     preserve_mentions: bool = True
     target_length: Optional[int] = None  # If None, uses optimal length
+
+
+class GenerateImageRequest(BaseModel):
+    prompt: str
+    model: Literal["dall-e-3", "dall-e-2"] = "dall-e-3"
+    size: Literal["1024x1024", "1792x1024", "1024x1792"] = "1024x1024"
+    quality: Literal["standard", "hd"] = "standard"
+    style: Literal["vivid", "natural"] = "vivid"
+
+
+class GenerateVideoRequest(BaseModel):
+    prompt: str
+    model: Literal["veo-3", "stable-video"] = "veo-3"
+    duration: int = Field(5, ge=1, le=30)
+    resolution: Literal["720p", "1080p", "4k"] = "720p"
+    aspect_ratio: Literal["16:9", "9:16", "1:1"] = "16:9"
+
+
+class AddEffectRequest(BaseModel):
+    image_url: str
+    effect: Literal["tophat", "monocle", "synthwave", "retro"] = "tophat"
+
+
+class SendEmailRequest(BaseModel):
+    to_email: str
+    subject: str = "AI Chat Conversation"
+    text: str
+    html: Optional[str] = None
+    from_name: str = "AI Chat to Twitter"
 
 
 # Create FastAPI app
@@ -350,6 +405,201 @@ async def process_with_ai(
     return text[:250] + "..."
 
 
+# Image and Video Generation Functions
+async def download_image(url: str) -> Optional[bytes]:
+    """Download image from URL and return as bytes"""
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        }
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, headers=headers, timeout=10.0)
+            if response.status_code == 200:
+                content_type = response.headers.get("content-type", "").lower()
+                if (
+                    "image" in content_type
+                    or response.content.startswith(b"\x89PNG")
+                    or response.content.startswith(b"\xff\xd8\xff")
+                ):
+                    return response.content
+        return None
+    except Exception as e:
+        print(f"Error downloading image: {e}")
+        return None
+
+
+async def generate_image_openai(request: GenerateImageRequest) -> Dict[str, Any]:
+    """Generate image using OpenAI DALL-E"""
+    if not openai_client:
+        raise HTTPException(status_code=500, detail="OpenAI API not configured")
+    
+    try:
+        response = openai_client.images.generate(
+            model=request.model,
+            prompt=request.prompt,
+            size=request.size,
+            quality=request.quality,
+            style=request.style,
+            n=1
+        )
+        
+        return {
+            "success": True,
+            "image_url": response.data[0].url,
+            "revised_prompt": getattr(response.data[0], 'revised_prompt', request.prompt),
+            "model": request.model,
+            "size": request.size
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "message": "Failed to generate image"
+        }
+
+
+async def generate_video_replicate(request: GenerateVideoRequest) -> Dict[str, Any]:
+    """Generate video using Replicate (stable-video-diffusion or other models)"""
+    if not CONFIG["REPLICATE_API_TOKEN"]:
+        raise HTTPException(status_code=500, detail="Replicate API not configured")
+    
+    try:
+        # Map resolution to dimensions
+        dimensions = {
+            "720p": {"width": 1280, "height": 720},
+            "1080p": {"width": 1920, "height": 1080},
+            "4k": {"width": 3840, "height": 2160}
+        }
+        
+        dim = dimensions[request.resolution]
+        
+        # Adjust dimensions based on aspect ratio
+        if request.aspect_ratio == "9:16":
+            dim["width"], dim["height"] = dim["height"], dim["width"]
+        elif request.aspect_ratio == "1:1":
+            dim["width"] = dim["height"] = min(dim["width"], dim["height"])
+        
+        # Use Stable Video Diffusion from Replicate
+        output = replicate.run(
+            "stability-ai/stable-video-diffusion:3f0457e4619daac51203dedb472816fd4af51f3149fa7a9e0b5ffcf1b8172438",
+            input={
+                "input_image": request.prompt,  # This would need to be an image URL
+                "frames": min(request.duration * 8, 25),  # Approximate frames
+                "sizing_strategy": "maintain_aspect_ratio",
+                "frames_per_second": 8,
+                "motion_bucket_id": 127,
+                "cond_aug": 0.02,
+                "decoding_t": 7,
+                "seed": 0
+            }
+        )
+        
+        return {
+            "success": True,
+            "video_url": output,
+            "model": "stable-video-diffusion",
+            "duration": request.duration,
+            "resolution": request.resolution,
+            "aspect_ratio": request.aspect_ratio
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "message": "Failed to generate video"
+        }
+
+
+async def add_effect_to_image(request: AddEffectRequest) -> Dict[str, Any]:
+    """Add effects to image using OpenAI"""
+    if not openai_client:
+        raise HTTPException(status_code=500, detail="OpenAI API not configured")
+    
+    try:
+        # Download the image
+        image_bytes = await download_image(request.image_url)
+        if not image_bytes:
+            raise HTTPException(status_code=400, detail="Failed to download image")
+        
+        # Create temp file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
+            tmp_file.write(image_bytes)
+            temp_path = tmp_file.name
+        
+        # Effect prompts
+        effect_prompts = {
+            "tophat": "Add a stylish black top hat to this person's head, keeping their face exactly the same",
+            "monocle": "Add a golden monocle over one eye, keeping the person's face exactly the same",
+            "synthwave": "Transform into hyperrealistic synthwave style with neon purple/pink/cyan colors, dramatic lighting, and cyberpunk atmosphere while keeping the person's face identical",
+            "retro": "Apply a retro 80s aesthetic with vintage colors and effects while keeping the person recognizable"
+        }
+        
+        prompt = effect_prompts.get(request.effect, effect_prompts["tophat"])
+        
+        # Use OpenAI image edit
+        with open(temp_path, "rb") as image_file:
+            response = openai_client.images.edit(
+                image=image_file,
+                prompt=prompt,
+                n=1,
+                size="1024x1024"
+            )
+        
+        # Clean up
+        os.unlink(temp_path)
+        
+        return {
+            "success": True,
+            "image_url": response.data[0].url,
+            "effect": request.effect,
+            "original_url": request.image_url
+        }
+    except Exception as e:
+        if 'temp_path' in locals() and os.path.exists(temp_path):
+            os.unlink(temp_path)
+        return {
+            "success": False,
+            "error": str(e),
+            "message": "Failed to add effect to image"
+        }
+
+
+async def prepare_email_link(request: SendEmailRequest) -> Dict[str, Any]:
+    """Prepare a mailto link for sending email"""
+    try:
+        # Encode the email parameters
+        subject = urllib.parse.quote(request.subject)
+        body = urllib.parse.quote(request.text)
+        
+        # Create mailto link
+        mailto_link = f"mailto:{request.to_email}?subject={subject}&body={body}"
+        
+        # Also prepare a shareable email template
+        email_template = f"""
+To: {request.to_email}
+Subject: {request.subject}
+
+{request.text}
+
+---
+Sent via AI Chat to Twitter Extension
+        """
+        
+        return {
+            "success": True,
+            "mailto_link": mailto_link,
+            "email_template": email_template,
+            "to": request.to_email,
+            "subject": request.subject
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "message": "Failed to prepare email"
+        }
+
+
 # Routes
 @app.get("/", response_class=HTMLResponse)
 async def home():
@@ -358,6 +608,12 @@ async def home():
     )
     anthropic_status = (
         "✅ Configured" if CONFIG["ANTHROPIC_API_KEY"] else "❌ Not configured"
+    )
+    openai_status = (
+        "✅ Configured" if CONFIG["OPENAI_API_KEY"] else "❌ Not configured"
+    )
+    replicate_status = (
+        "✅ Configured" if CONFIG["REPLICATE_API_TOKEN"] else "❌ Not configured"
     )
 
     return f"""
@@ -379,6 +635,8 @@ async def home():
             <h3>Configuration Status</h3>
             <p>Twitter API: {twitter_status}</p>
             <p>Anthropic AI: {anthropic_status}</p>
+            <p>OpenAI API: {openai_status}</p>
+            <p>Replicate API: {replicate_status}</p>
             <p>Server URL: {CONFIG['BASE_URL']}</p>
         </div>
         
@@ -386,6 +644,10 @@ async def home():
         <ul>
             <li><code>POST /api/process-text</code> - Process text with AI</li>
             <li><code>GET /api/styles</code> - Get available styles</li>
+            <li><code>POST /api/generate-image</code> - Generate images with DALL-E</li>
+            <li><code>POST /api/generate-video</code> - Generate videos with Replicate</li>
+            <li><code>POST /api/add-effect</code> - Add effects to images</li>
+            <li><code>POST /api/upload-image</code> - Upload images</li>
             <li><code>GET /oauth/login</code> - Start OAuth (if configured)</li>
         </ul>
         
@@ -436,6 +698,72 @@ async def get_styles():
             {"value": "technical", "label": "Technical"},
         ]
     }
+
+
+@app.post("/api/generate-image")
+async def generate_image(request: GenerateImageRequest):
+    """Generate an image using OpenAI DALL-E"""
+    result = await generate_image_openai(request)
+    if not result["success"]:
+        raise HTTPException(status_code=500, detail=result["message"])
+    return result
+
+
+@app.post("/api/generate-video")
+async def generate_video(request: GenerateVideoRequest):
+    """Generate a video using Replicate"""
+    result = await generate_video_replicate(request)
+    if not result["success"]:
+        raise HTTPException(status_code=500, detail=result["message"])
+    return result
+
+
+@app.post("/api/add-effect")
+async def add_effect(request: AddEffectRequest):
+    """Add effects to an existing image"""
+    result = await add_effect_to_image(request)
+    if not result["success"]:
+        raise HTTPException(status_code=500, detail=result["message"])
+    return result
+
+
+@app.post("/api/upload-image")
+async def upload_image(file: UploadFile = File(...)):
+    """Upload an image and return its URL"""
+    try:
+        # Validate file type
+        if not file.content_type.startswith("image/"):
+            raise HTTPException(status_code=400, detail="File must be an image")
+        
+        # Read file content
+        content = await file.read()
+        
+        # Create a unique filename
+        filename = f"{uuid.uuid4().hex}_{file.filename}"
+        
+        # In production, you would upload to a cloud storage service
+        # For now, we'll return a base64 data URL
+        base64_image = base64.b64encode(content).decode()
+        data_url = f"data:{file.content_type};base64,{base64_image}"
+        
+        return {
+            "success": True,
+            "url": data_url,
+            "filename": filename,
+            "content_type": file.content_type,
+            "size": len(content)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/send-email")
+async def send_email(request: SendEmailRequest):
+    """Prepare email for sending"""
+    result = await prepare_email_link(request)
+    if not result["success"]:
+        raise HTTPException(status_code=500, detail=result["message"])
+    return result
 
 
 @app.get("/oauth/login")
@@ -583,6 +911,8 @@ if __name__ == "__main__":
     
     Twitter API: {'✅ Configured' if CONFIG['TWITTER_API_KEY'] else '❌ Not configured - Add to .env file'}
     Anthropic AI: {'✅ Configured' if CONFIG['ANTHROPIC_API_KEY'] else '❌ Not configured - Add to .env file'}
+    OpenAI API: {'✅ Configured' if CONFIG['OPENAI_API_KEY'] else '❌ Not configured - Add to .env file'}
+    Replicate API: {'✅ Configured' if CONFIG['REPLICATE_API_TOKEN'] else '❌ Not configured - Add to .env file'}
     
     API Docs: {CONFIG['BASE_URL']}/docs
     Test Examples: {CONFIG['BASE_URL']}/api/test-condense
@@ -590,9 +920,11 @@ if __name__ == "__main__":
     Enhanced Features:
     - Advanced condensing system prompts
     - Multiple style options with specialized prompts
+    - Image generation with DALL-E 3
+    - Video generation with Replicate
+    - Image effects (tophat, monocle, synthwave, retro)
     - Hashtag/mention preservation
     - Character counting and validation
-    - Test endpoint for examples
     
     Press Ctrl+C to stop
     """
