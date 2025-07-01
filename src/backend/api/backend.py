@@ -120,8 +120,46 @@ except Exception as e:
     print(f"⚠️ Failed to load sentence transformer: {e}")
     embedder = None
 
-# Token counter
+# Enhanced token counting with platform-specific encodings
+def get_encoding_for_platform(platform: str):
+    """Get appropriate tokenizer encoding for different platforms"""
+    platform_encodings = {
+        "claude": "gpt-4",      # Claude uses similar tokenization to GPT-4
+        "chatgpt": "gpt-4",     # Direct GPT-4 tokenization
+        "gpt-4": "gpt-4",       # Direct GPT-4 tokenization
+        "gemini": "gpt-4",      # Use GPT-4 as fallback for Gemini
+        "default": "gpt-4"
+    }
+    
+    model_name = platform_encodings.get(platform.lower(), "gpt-4")
+    return tiktoken.encoding_for_model(model_name)
+
+# Legacy encoding for backward compatibility
 encoding = tiktoken.encoding_for_model("gpt-4")
+
+def count_tokens(text: str, platform: str = "default") -> dict:
+    """Enhanced token counting with detailed metrics"""
+    try:
+        enc = get_encoding_for_platform(platform)
+        tokens = enc.encode(text)
+        
+        return {
+            "total_tokens": len(tokens),
+            "platform": platform,
+            "encoding_used": "gpt-4",  # For now, all use GPT-4 encoding
+            "text_length": len(text),
+            "tokens_per_char": len(tokens) / len(text) if text else 0
+        }
+    except Exception as e:
+        print(f"⚠️ Token counting error: {e}")
+        # Fallback to simple estimation
+        return {
+            "total_tokens": len(text) // 4,  # Rough estimation: ~4 chars per token
+            "platform": platform,
+            "encoding_used": "fallback",
+            "text_length": len(text),
+            "tokens_per_char": 0.25
+        }
 
 
 # Upstash Redis client
@@ -719,7 +757,7 @@ async def init_lancedb():
         existing_tables = list(lance_db.table_names())
         print(f"📋 Found existing LanceDB tables: {existing_tables}")
 
-        # Users table
+        # Users table with enhanced token tracking
         if "users" not in existing_tables:
             initial_user = [
                 {
@@ -733,6 +771,12 @@ async def init_lancedb():
                     "conversation_count": 0,
                     "journey_count": 0,
                     "graph_nodes_created": 0,
+                    # Enhanced token tracking fields
+                    "total_tokens": 0,
+                    "tokens_by_platform": {},  # {"claude": 1234, "chatgpt": 567}
+                    "tokens_by_role": {"user": 0, "assistant": 0},
+                    "daily_tokens": {},  # {"2024-01-01": 150, "2024-01-02": 200}
+                    "last_token_update": None,
                 }
             ]
             try:
@@ -1097,7 +1141,13 @@ async def create_user(user_data: dict):
             "x_username": user_data.get("x_username", ""),
             "x_id": user_data.get("x_id", ""),
             "auth_method": user_data.get("auth_method", "wallet"),
-            "last_active": user_data.get("last_active", datetime.now().isoformat())
+            "last_active": user_data.get("last_active", datetime.now().isoformat()),
+            # Token tracking fields
+            "total_tokens": user_data.get("total_tokens", 0),
+            "tokens_by_platform": user_data.get("tokens_by_platform", {}),
+            "tokens_by_role": user_data.get("tokens_by_role", {"user": 0, "assistant": 0}),
+            "daily_tokens": user_data.get("daily_tokens", {}),
+            "last_token_update": datetime.now().isoformat()
         }
         
         # Check if user already exists in cache before adding to DB
@@ -1123,6 +1173,47 @@ async def create_user(user_data: dict):
         import traceback
         traceback.print_exc()
         raise e
+
+
+async def update_user_token_count(wallet: str, token_metrics: dict, role: str):
+    """Update user's token tracking with new message tokens"""
+    if wallet not in user_cache:
+        print(f"⚠️ User not in cache for token update: {wallet}")
+        return
+    
+    user = user_cache[wallet]
+    platform = token_metrics.get("platform", "unknown")
+    tokens = token_metrics.get("total_tokens", 0)
+    today = datetime.now().date().isoformat()
+    
+    # Update total tokens
+    user["total_tokens"] = user.get("total_tokens", 0) + tokens
+    
+    # Update tokens by platform
+    tokens_by_platform = user.get("tokens_by_platform", {})
+    tokens_by_platform[platform] = tokens_by_platform.get(platform, 0) + tokens
+    user["tokens_by_platform"] = tokens_by_platform
+    
+    # Update tokens by role (user vs assistant)
+    tokens_by_role = user.get("tokens_by_role", {"user": 0, "assistant": 0})
+    tokens_by_role[role] = tokens_by_role.get(role, 0) + tokens
+    user["tokens_by_role"] = tokens_by_role
+    
+    # Update daily tokens
+    daily_tokens = user.get("daily_tokens", {})
+    daily_tokens[today] = daily_tokens.get(today, 0) + tokens
+    user["daily_tokens"] = daily_tokens
+    
+    # Update timestamp
+    user["last_token_update"] = datetime.now().isoformat()
+    
+    # Update cache
+    user_cache[wallet] = user
+    
+    print(f"📊 Updated user tokens: {wallet} (+{tokens} {role} tokens from {platform})")
+    print(f"   Total: {user['total_tokens']} | Today: {daily_tokens.get(today, 0)}")
+    
+    return user
 
 
 async def update_user_earnings(
@@ -1302,6 +1393,12 @@ async def register_wallet(registration: WalletRegistration):
             "graphNodesCreated": 0,
             "auth_method": "wallet",
             "last_active": str(datetime.now().isoformat()),
+            # Enhanced token tracking fields
+            "total_tokens": 0,
+            "tokens_by_platform": {},
+            "tokens_by_role": {"user": 0, "assistant": 0},
+            "daily_tokens": {},
+            "last_token_update": None,
         }
         await create_user(user_doc)
 
@@ -1388,6 +1485,12 @@ async def store_message(
             "x_id": "",
             "auth_method": "wallet",
             "last_active": datetime.now().isoformat(),
+            # Enhanced token tracking fields
+            "total_tokens": 0,
+            "tokens_by_platform": {},
+            "tokens_by_role": {"user": 0, "assistant": 0},
+            "daily_tokens": {},
+            "last_token_update": None,
         }
         try:
             user = await create_user(user_doc)
@@ -1402,8 +1505,9 @@ async def store_message(
     # Anonymize message
     anonymized_text = anonymize_text(data.message.text)
 
-    # Count tokens
-    token_count = len(encoding.encode(data.message.text))
+    # Enhanced token counting with platform-specific metrics
+    token_metrics = count_tokens(data.message.text, data.message.platform)
+    token_count = token_metrics["total_tokens"]
 
     # Get embeddings (both OpenAI and sentence transformer)
     text_embedding = await get_embedding(anonymized_text, "openai")
@@ -1435,6 +1539,7 @@ async def store_message(
             or [0.0] * 384,  # Default MiniLM embedding size
             "timestamp": data.message.timestamp,
             "token_count": token_count,
+            "token_metrics": token_metrics,  # Enhanced token details
             "has_artifacts": (
                 bool(data.message.artifacts)
                 if hasattr(data.message, "artifacts")
@@ -1473,6 +1578,13 @@ async def store_message(
         print(f"  - Token Count: {new_message['token_count']}")
         print(f"  - Topics: {new_message['topics']}")
         print(f"{'='*60}\n")
+
+        # Update user token tracking with enhanced metrics
+        await update_user_token_count(
+            wallet=data.wallet,
+            token_metrics=token_metrics,
+            role=data.message.role
+        )
 
     except Exception as e:
         print(f"❌ Error storing message to LanceDB: {e}")
@@ -2812,7 +2924,13 @@ async def get_user_stats(wallet: str):
             "journey_count": 0,
             "graph_count": 0,
             "graph_nodes_created": 0,
-            "last_active": now.isoformat()
+            "last_active": now.isoformat(),
+            # Enhanced token tracking fields
+            "total_tokens": 0,
+            "tokens_by_platform": {},
+            "tokens_by_role": {"user": 0, "assistant": 0},
+            "daily_tokens": {},
+            "last_token_update": None,
         }
         await create_user(user_data)
         user = user_data

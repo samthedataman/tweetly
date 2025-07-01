@@ -35,6 +35,12 @@ SCHEMAS = {
         ("x_id", pa.string()),
         ("auth_method", pa.string()),
         ("last_active", pa.string()),
+        # Enhanced token tracking fields
+        ("total_tokens", pa.int64()),
+        ("tokens_by_platform", pa.string()),  # JSON string: {"claude": 1234, "chatgpt": 567}
+        ("tokens_by_role", pa.string()),      # JSON string: {"user": 800, "assistant": 1001}
+        ("daily_tokens", pa.string()),        # JSON string: {"2025-07-01": 150}
+        ("last_token_update", pa.string()),   # ISO timestamp
     ]),
     
     "sessions": pa.schema([
@@ -67,6 +73,7 @@ SCHEMAS = {
         ("summary_vector", pa.list_(pa.float32(), 384)),
         ("timestamp", pa.int64()),
         ("token_count", pa.int64()),
+        ("token_metrics", pa.string()),      # JSON string with detailed token metrics
         ("has_artifacts", pa.bool_()),
         ("topics", pa.list_(pa.string())),
         ("entities", pa.string()),
@@ -186,6 +193,12 @@ def create_initial_data(table_name: str, schema: pa.Schema) -> pa.Table:
             "x_id": ["123456789"],
             "auth_method": ["wallet"],
             "last_active": [datetime.utcnow().isoformat()],
+            # Enhanced token tracking fields
+            "total_tokens": [1500],
+            "tokens_by_platform": ['{"claude": 800, "chatgpt": 500, "gemini": 200}'],
+            "tokens_by_role": ['{"user": 750, "assistant": 750}'],
+            "daily_tokens": ['{"2025-07-01": 150, "2025-06-30": 200}'],
+            "last_token_update": [datetime.utcnow().isoformat()],
         }
     
     elif table_name == "sessions":
@@ -223,6 +236,10 @@ def create_initial_data(table_name: str, schema: pa.Schema) -> pa.Table:
             "summary_vector": [np.random.randn(384).astype(np.float32).tolist(), np.random.randn(384).astype(np.float32).tolist()],
             "timestamp": [timestamp - 60, timestamp],
             "token_count": [10, 15],
+            "token_metrics": [
+                '{"total_tokens": 10, "platform": "claude", "encoding_used": "gpt-4", "text_length": 35, "tokens_per_char": 0.29}',
+                '{"total_tokens": 15, "platform": "claude", "encoding_used": "gpt-4", "text_length": 48, "tokens_per_char": 0.31}'
+            ],
             "has_artifacts": [False, False],
             "topics": [["python", "help"], ["python", "assistance"]],
             "entities": ['{"entities": ["Python"]}', '{"entities": ["Python"]}'],
