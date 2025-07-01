@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contextly - Dashboard</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand img {
+            width: 32px;
+            height: 32px;
+        }
+
+        .brand-name {
+            font-size: 24px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .status-badge.active {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status-badge.inactive {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .main-content {
+            display: grid;
+            gap: 30px;
+        }
+
+        .connect-section {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .connect-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .connect-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 24px;
+            background: rgba(99, 102, 241, 0.1);
+            border: 2px solid rgba(99, 102, 241, 0.3);
+            border-radius: 12px;
+            color: #a5b4fc;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .connect-btn:hover {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: rgba(99, 102, 241, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+        }
+
+        .connect-btn.connected {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.3);
+            color: #10b981;
+        }
+
+        .connect-icon {
+            font-size: 20px;
+        }
+
+        .mode-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .mode-label {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .mode-desc {
+            font-size: 14px;
+            opacity: 0.7;
+        }
+
+        .toggle-switch {
+            width: 60px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-switch.active {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        }
+
+        .toggle-slider {
+            width: 28px;
+            height: 28px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(28px);
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        .action-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(99, 102, 241, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .action-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .action-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .action-desc {
+            font-size: 14px;
+            opacity: 0.7;
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 32px;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #6366f1;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.7;
+        }
+
+        .import-section {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .import-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .import-desc {
+            opacity: 0.8;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .import-btn {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border: none;
+            border-radius: 12px;
+            padding: 12px 24px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .import-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .footer-link {
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s ease;
+        }
+
+        .footer-link:hover {
+            color: #6366f1;
+        }
+
+        .debug-section {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 12px;
+            max-width: 300px;
+            z-index: 1000;
+        }
+
+        .debug-item {
+            margin-bottom: 4px;
+            color: #10b981;
+        }
+
+        .debug-item.error {
+            color: #ef4444;
+        }
+
+        /* Toast notifications */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .toast.success {
+            background: #10b981;
+        }
+
+        .toast.error {
+            background: #ef4444;
+        }
+
+        .toast.info {
+            background: #3b82f6;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        /* Wallet Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1a1a1a;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 480px;
+            width: 90%;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .modal-close:hover {
+            color: white;
+        }
+
+        .wallet-options {
+            display: grid;
+            gap: 12px;
+        }
+
+        .wallet-option {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .wallet-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #6366f1;
+        }
+
+        .wallet-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+        }
+
+        .wallet-name {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .wallet-desc {
+            font-size: 14px;
+            opacity: 0.7;
+        }
+
+        @media (max-width: 768px) {
+            .connect-buttons {
+                flex-direction: column;
+            }
+            
+            .stats-row {
+                gap: 16px;
+            }
+            
+            .actions-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="brand">
+                <img src="icons/icon48.png" alt="Contextly">
+                <span class="brand-name">Contextly</span>
+            </div>
+            <span class="status-badge" id="platformStatus">Checking...</span>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Connect Section -->
+            <div class="connect-section">
+                <div class="connect-buttons">
+                    <button class="connect-btn" id="walletConnectBtn">
+                        <span class="connect-icon">👛</span>
+                        <span>Connect Wallet</span>
+                    </button>
+                    <button class="connect-btn" id="xConnectBtn">
+                        <span class="connect-icon">𝕏</span>
+                        <span>Connect X</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mode Toggle -->
+            <div class="mode-section">
+                <div>
+                    <div class="mode-label" id="modeLabel">Free Mode</div>
+                    <div class="mode-desc">Enable to start earning CTXT</div>
+                </div>
+                <div class="toggle-switch" id="modeToggle">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="actions-grid">
+                <div class="action-card" data-action="import">
+                    <span class="action-icon">📥</span>
+                    <div class="action-title">Import</div>
+                    <div class="action-desc">Add past chats</div>
+                </div>
+                <div class="action-card" data-action="search">
+                    <span class="action-icon">🔍</span>
+                    <div class="action-title">Search</div>
+                    <div class="action-desc">Find anything</div>
+                </div>
+                <div class="action-card" data-action="export">
+                    <span class="action-icon">📤</span>
+                    <div class="action-title">Export</div>
+                    <div class="action-desc">Download chats</div>
+                </div>
+                <div class="action-card" data-action="share">
+                    <span class="action-icon">🔗</span>
+                    <div class="action-title">Share</div>
+                    <div class="action-desc">Create link</div>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-row">
+                <div class="stat">
+                    <div class="stat-value" id="conversationCount">0</div>
+                    <div class="stat-label">Chats</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="ctxtBalance">0</div>
+                    <div class="stat-label">CTXT</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="dayStreak">0</div>
+                    <div class="stat-label">Streak</div>
+                </div>
+            </div>
+
+            <!-- Import Section -->
+            <div class="import-section">
+                <div class="import-title">Unify Your AI Conversations</div>
+                <div class="import-desc">Import chats from Claude, ChatGPT, and Gemini into one searchable history</div>
+                <button class="import-btn" id="importBtn">Import Conversations</button>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-links">
+                <a href="#" class="footer-link" id="settingsLink">Settings</a>
+                <a href="#" class="footer-link" id="helpLink">Help</a>
+                <a href="#" class="footer-link" id="debugToggle">Debug</a>
+            </div>
+            <span class="footer-link" id="versionInfo">v1.1.0 - Tab Mode</span>
+        </div>
+
+        <!-- Debug Section -->
+        <div class="debug-section" id="debugInfo" style="display: none;">
+            <div class="debug-item">Wallet: <span id="debugWallet">Not connected</span></div>
+            <div class="debug-item">Mode: <span id="debugMode">Free</span></div>
+            <div class="debug-item">LanceDB: <span id="debugLanceDB">Not initialized</span></div>
+            <div class="debug-item">Last Action: <span id="debugLastAction">Page loaded</span></div>
+        </div>
+
+        <!-- Wallet Modal -->
+        <div class="modal-overlay" id="walletModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Connect Wallet</h3>
+                    <button class="modal-close" id="closeWalletModal">×</button>
+                </div>
+                
+                <div class="wallet-options">
+                    <div class="wallet-option" data-wallet="coinbase">
+                        <div class="wallet-icon">
+                            <img src="https://avatars.githubusercontent.com/u/1885080?s=200&v=4" alt="Coinbase" style="width: 24px; height: 24px; border-radius: 4px;">
+                        </div>
+                        <div>
+                            <div class="wallet-name">Coinbase Wallet</div>
+                            <div class="wallet-desc">Recommended for Base</div>
+                        </div>
+                    </div>
+                    
+                    <div class="wallet-option" data-wallet="metamask">
+                        <div class="wallet-icon">🦊</div>
+                        <div>
+                            <div class="wallet-name">MetaMask</div>
+                            <div class="wallet-desc">Most popular</div>
+                        </div>
+                    </div>
+                    
+                    <div class="wallet-option" data-wallet="walletconnect">
+                        <div class="wallet-icon">🔗</div>
+                        <div>
+                            <div class="wallet-name">WalletConnect</div>
+                            <div class="wallet-desc">Mobile wallets</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Container -->
+        <div id="toastContainer"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="src/extension/popup/popup_simple.js"></script>
+    <script src="popup-tab.js"></script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+{
+  "name": "contextly-ai",
+  "version": "3.0.0",
+  "description": "AI Conversation Intelligence Platform - Capture, organize, and monetize your AI interactions",
+  "main": "src/extension/background/background.js",
+  "scripts": {
+    "test": "jest",
+    "lint": "eslint src/extension/**/*.js",
+    "format": "prettier --write 'src/**/*.{js,json,css,html}'",
+    "build": "node scripts/build.js",
+    "watch": "node scripts/watch.js",
+    "package": "node scripts/package.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/contextly/contextly.git"
+  },
+  "keywords": [
+    "chrome-extension",
+    "ai",
+    "claude",
+    "chatgpt",
+    "gemini",
+    "web3",
+    "blockchain",
+    "knowledge-graph"
+  ],
+  "author": "Contextly Team",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/contextly/contextly/issues"
+  },
+  "homepage": "https://contextly.ai",
+  "devDependencies": {
+    "eslint": "^8.0.0",
+    "jest": "^27.0.0",
+    "prettier": "^2.0.0"
+  },
+  "dependencies": {
+    "browserify": "^17.0.1",
+    "metamask-extension-provider": "^5.0.0",
+    "web3": "^1.8.0"
+  }
+}

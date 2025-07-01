@@ -1,13 +1,75 @@
-.env
-
-# Virtual environments
+# Dependencies
+node_modules/
 venv/
-env/
-ENV/
-.venv/
-.ENV/
-virtualenv/
-*.virtualenv
 __pycache__/
-*.py[cod]
-*$py.class
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+build/
+dist/
+*.zip
+*.crx
+*.pem
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+backend.log
+nohup.out
+
+# Testing
+coverage/
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+tests/test_results/
+
+# OS files
+Thumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.cache
+.temp/
+
+# Project specific
+contextly-extension.zip
+data/
+uploads/
+sessions/
+
+# MongoDB
+*.lock
+journal/
+
+# Security
+*.key
+*.cert
+*.pem
+secrets.json

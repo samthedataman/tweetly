@@ -1,249 +1,254 @@
-# AI Chat to Twitter Chrome Extension 🐦✨
+# Contextly.ai - AI Conversation Intelligence Platform
 
-Share your AI conversations on Twitter/X and other platforms with style! This Chrome extension adds sharing capabilities to Claude.ai, ChatGPT, and Google AI Studio, with AI-powered text processing and image generation.
+<div align="center">
+  <img src="icons/icon128.png" alt="Contextly Logo" width="128" height="128">
+  
+  **Capture, organize, and monetize your AI conversations across Claude, ChatGPT, and Gemini**
+  
+  [![Chrome Web Store](https://img.shields.io/badge/Chrome-Extension-4285F4?logo=google-chrome&logoColor=white)](https://chrome.google.com/webstore)
+  [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+  [![Version](https://img.shields.io/badge/version-3.0.0-green.svg)](manifest.json)
+</div>
 
-![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-blue?logo=googlechrome)
-![FastAPI](https://img.shields.io/badge/FastAPI-Backend-green?logo=fastapi)
-![AI Powered](https://img.shields.io/badge/AI-Powered-purple?logo=openai)
+## 🚀 Features
 
-## 🌟 Features
+### Core Capabilities
+- **🔄 Universal AI Capture** - Automatically capture conversations from Claude, ChatGPT, and Gemini
+- **🧠 GraphRAG Intelligence** - Knowledge graph construction for deep context understanding
+- **📊 Smart Summarization** - Multi-mode conversation summaries with key insights
+- **🏷️ Auto-Titling** - Intelligent conversation titles with emoji categorization
+- **💰 Web3 Earn Mode** - Monetize your AI interactions on Base blockchain
+- **🔍 Vector Search** - Lightning-fast semantic search across all conversations
+- **📱 Cross-Platform Transfer** - Seamlessly move context between AI platforms
 
-### 🎯 Universal AI Platform Support
-- **Claude.ai** - Full support with artifact handling
-- **ChatGPT** - Seamless integration
-- **Google AI Studio** - Complete compatibility
+### Advanced Features
+- **Knowledge Graphs** - Extract entities and relationships from conversations
+- **Progressive Summarization** - Handle ultra-long conversations efficiently
+- **Multimodal Support** - Process text, code, and images
+- **Real-time Insights** - Behavioral analytics and usage patterns
+- **Gasless Transactions** - Web3 features without transaction fees
 
-### 📤 Multi-Platform Sharing
-- **🐦 Twitter/X** - Share conversations with automatic text condensing
-- **📧 Email** - Send via your default email client
-- **💬 SMS** - Share through text messages
-- **📰 Substack** - Convert to newsletter articles
-- **📄 Medium** - Create blog posts
+## 📁 Project Structure
 
-### 🤖 AI-Powered Features
-- **📝 Smart Condensing** - Automatically fit long messages into Twitter's 280-character limit
-- **✨ Text Restyling** - Transform tone and style:
-  - Professional
-  - Casual
-  - Humorous
-  - Concise
-  - Creative
-  - Technical
-- **🎨 Image Generation** - Create AI images with DALL-E 3
-- **🖼️ Image Effects** - Add fun effects (tophat, monocle, synthwave, retro)
+```
+contextly/
+├── src/
+│   ├── extension/          # Chrome Extension
+│   │   ├── background/     # Service worker scripts
+│   │   ├── content/        # Content scripts for AI platforms
+│   │   ├── popup/          # Extension popup UI
+│   │   ├── adapters/       # Platform & wallet adapters
+│   │   └── services/       # Core services
+│   │
+│   ├── backend/           # Backend API
+│   │   ├── api/           # FastAPI endpoints
+│   │   ├── models/        # Data models
+│   │   ├── services/      # Business logic
+│   │   └── utils/         # Utility functions
+│   │
+│   ├── shared/            # Shared modules
+│   │   ├── config.js      # Configuration
+│   │   └── messageProtocol.js # Message handling
+│   │
+│   └── tests/             # Test suites
+│
+├── docs/                  # Documentation
+├── scripts/               # Build & deployment scripts
+├── icons/                 # Extension icons
+└── requirements.txt       # Python dependencies
+```
 
-### 🎨 Smart UI Features
-- **Floating Action Buttons** - Non-intrusive share buttons on AI messages
-- **Text Selection Button** - Share selected text instantly
-- **Platform-Adaptive Design** - Matches each AI platform's UI
-- **Real-time Status Indicator** - Shows extension and processing status
-- **Character Counter** - Color-coded warnings for Twitter limits
+## 🛠️ Technology Stack
 
-## 📋 Requirements
+### Frontend (Chrome Extension)
+- **Core**: Vanilla JavaScript, Chrome Extension Manifest V3
+- **Blockchain**: Web3.js, Base Network Integration
+- **UI**: Custom CSS with modern design system
 
-### Chrome Extension
-- Google Chrome or Chromium-based browser
-- Developer mode enabled for local installation
-
-### Backend Server
-- Python 3.8+
-- API Keys:
-  - Anthropic API key (for Claude text processing)
-  - OpenAI API key (for DALL-E image generation)
-  - Twitter API credentials (optional, for OAuth)
+### Backend
+- **Framework**: FastAPI (Python 3.7+)
+- **Vector DB**: LanceDB Cloud for embeddings
+- **Graph Processing**: NetworkX + GraphRAG
+- **Cache**: Upstash Redis
+- **Database**: MongoDB
+- **AI/ML**: OpenAI GPT-4, Sentence Transformers
 
 ## 🚀 Quick Start
 
-### 1. Backend Setup
+### Prerequisites
+- Python 3.7+
+- Node.js 14+ (for development tools)
+- Chrome/Brave browser
+- MongoDB (optional for full backend)
 
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/ai-chat-twitter.git
-cd ai-chat-twitter
+### Installation
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/contextly/contextly.git
+   cd contextly
+   ```
 
-# Install dependencies
-pip install -r requirements.txt
+2. **Set up the backend**
+   ```bash
+   # Create virtual environment
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Create .env file
-cp .env.example .env
-# Edit .env and add your API keys:
-# ANTHROPIC_API_KEY=your_key_here
-# OPENAI_API_KEY=your_key_here
-# TWITTER_API_KEY=your_key_here (optional)
-# TWITTER_API_SECRET=your_secret_here (optional)
+   # Install dependencies
+   pip install -r requirements.txt
 
-# Run the server
-python backend.py
-```
+   # Copy environment template
+   cp .env.example .env
+   # Edit .env with your API keys
 
-The server will start on `http://localhost:8000`
+   # Run the backend (demo mode)
+   python src/backend/api/backend_demo.py
+   ```
 
-### 2. Chrome Extension Installation
-
-1. Open Chrome and navigate to `chrome://extensions/`
-2. Enable "Developer mode" (top right)
-3. Click "Load unpacked"
-4. Select the project directory containing `manifest.json`
-5. The extension icon will appear in your toolbar
-
-### 3. Using the Extension
-
-1. Visit Claude.ai, ChatGPT, or Google AI Studio
-2. Look for the floating share buttons on AI messages
-3. Click a button to share:
-   - 🐦 Twitter - Opens compose window with condensed text
-   - 📧 Email - Opens email client with formatted message
-   - 💬 SMS - Opens SMS app with message
-   - 📰 Substack/📄 Medium - Redirects to platform
-4. Select any text to see the floating share button
-5. Use the "Condense" or "Restyle" options for AI text processing
-
-## 🛠️ Development
-
-### Project Structure
-
-```
-ai-chat-twitter/
-├── manifest.json        # Chrome extension manifest
-├── content.js          # Main extension logic
-├── styles.css          # Extension styles
-├── icon.svg           # Extension icon
-├── backend.py         # FastAPI backend server
-├── requirements.txt   # Python dependencies
-├── vercel.json       # Vercel deployment config
-└── README.md         # This file
-```
-
-### Backend API Endpoints
-
-- `GET /` - Health check
-- `POST /condense` - Condense text for Twitter
-- `POST /restyle` - Transform text style
-- `POST /email` - Prepare email with conversation
-- `POST /generate-image` - Generate AI image
-- `POST /add-effect` - Add effects to images
-- `GET /auth/twitter` - Twitter OAuth flow
-- `GET /auth/twitter/callback` - OAuth callback
-
-### Extension Configuration
-
-Edit `manifest.json` to modify:
-- Permissions
-- Content script injection sites
-- Extension metadata
-
-### Styling
-
-The extension uses platform-adaptive styling. Modify `styles.css` to change:
-- Button appearance
-- Dialog styles
-- Animation effects
-- Platform-specific themes
-
-## 🚀 Deployment
-
-### Backend Deployment (Vercel)
-
-```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy
-vercel
-
-# Set environment variables in Vercel dashboard
-```
-
-### Extension Publishing
-
-1. Test thoroughly on all supported platforms
-2. Create a ZIP file of extension files
-3. Upload to Chrome Web Store
-4. Follow Google's review process
+3. **Install the Chrome Extension**
+   - Open Chrome and navigate to `chrome://extensions/`
+   - Enable "Developer mode"
+   - Click "Load unpacked"
+   - Select the `contextly` directory
 
 ## 🔧 Configuration
 
 ### Environment Variables
-
 Create a `.env` file with:
 
 ```env
-# Required for text processing
-ANTHROPIC_API_KEY=your_anthropic_api_key
+# Required
+OPENAI_API_KEY=your-openai-key
 
-# Required for image generation
-OPENAI_API_KEY=your_openai_api_key
-
-# Optional - for Twitter OAuth
-TWITTER_API_KEY=your_twitter_api_key
-TWITTER_API_SECRET=your_twitter_api_secret
-
-# Server configuration
-BASE_URL=http://localhost:8000
-PORT=8000
+# Optional (for full features)
+LANCEDB_URI=db://your-lancedb-uri
+LANCEDB_API_KEY=your-lancedb-key
+UPSTASH_REDIS_REST_URL=https://your-upstash-url
+UPSTASH_REDIS_REST_TOKEN=your-token
+MONGODB_URL=mongodb://localhost:27017
 ```
 
-### Chrome Extension Settings
+### Extension Configuration
+Edit `src/shared/config.js` to customize:
+- API endpoints
+- Platform selectors
+- Feature flags
 
-The extension automatically detects the backend URL. For production, update the `BASE_URL` in `content.js`.
+## 📖 Usage Guide
+
+### Basic Usage
+
+1. **Install Extension**: Add to Chrome from the Web Store or load unpacked
+2. **Start Capturing**: Visit Claude, ChatGPT, or Gemini - conversations auto-capture
+3. **View Summaries**: Click extension icon to see organized conversations
+4. **Search & Filter**: Use the search bar to find specific topics
+
+### Advanced Features
+
+#### Enable Earn Mode
+1. Click the extension icon
+2. Toggle to "Earn Mode"
+3. Connect your wallet (Coinbase Smart Wallet recommended)
+4. Start earning CTXT tokens for quality conversations
+
+#### Build Knowledge Graphs
+```javascript
+// Via API
+POST /v1/graph/build
+{
+  "session_id": "your-session-id",
+  "wallet": "0x..."
+}
+```
+
+#### Generate Insights
+Access behavioral analytics and recommendations through the insights API.
+
+## 🧪 Testing
+
+### Run Tests
+```bash
+# Backend tests
+python src/tests/test_backend.py
+
+# Extension tests
+npm test
+```
+
+### Manual Testing
+Use the demo backend for development:
+```bash
+python src/backend/api/backend_demo.py
+```
+
+## 📚 API Documentation
+
+### Key Endpoints
+
+#### Conversation Management
+- `POST /v1/conversations/summarize` - Generate summaries
+- `POST /v1/conversations/title` - Auto-generate titles
+- `POST /v1/conversations/list` - List with previews
+
+#### GraphRAG
+- `POST /v1/graph/build` - Build knowledge graph
+- `POST /v1/graph/query` - Query with natural language
+
+#### Analytics
+- `POST /v1/insights/generate` - User behavior insights
+
+Full API documentation available at `http://localhost:8000/docs` when running.
 
 ## 🤝 Contributing
 
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+### Development Workflow
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-### Development Guidelines
+## 📈 Roadmap
 
-- Follow existing code style
-- Test on all supported AI platforms
-- Update documentation for new features
-- Add error handling for edge cases
-- Ensure backward compatibility
+- [ ] Real-time collaboration features
+- [ ] Mobile app companion
+- [ ] Advanced analytics dashboard
+- [ ] Multi-language support
+- [ ] Voice conversation support
+- [ ] Plugin system for custom integrations
 
-## 🐛 Troubleshooting
+## 🔒 Security
 
-### Extension Not Working
-
-1. Check if the backend server is running
-2. Verify API keys are correctly set
-3. Check browser console for errors
-4. Ensure you're on a supported AI platform
-
-### Text Processing Issues
-
-1. Verify Anthropic API key is valid
-2. Check server logs for errors
-3. Ensure proper CORS configuration
-
-### Image Generation Failures
-
-1. Verify OpenAI API key is valid
-2. Check API rate limits
-3. Ensure image prompt is appropriate
+- All conversations are anonymized before storage
+- PII is automatically removed
+- Wallet signatures verify ownership
+- JWT authentication for API access
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- Built with [FastAPI](https://fastapi.tiangolo.com/)
-- AI powered by [Anthropic Claude](https://www.anthropic.com/) and [OpenAI](https://openai.com/)
-- Icons and UI inspired by material design principles
+- OpenAI for GPT-4 API
+- Microsoft Research for GraphRAG concepts
+- LanceDB team for vector database
+- Base/Coinbase for blockchain infrastructure
 
 ## 📞 Support
 
-- Report bugs via [GitHub Issues](https://github.com/yourusername/ai-chat-twitter/issues)
-- Feature requests welcome!
-- Contact: your.email@example.com
+- **Documentation**: [docs.contextly.ai](https://docs.contextly.ai)
+- **Issues**: [GitHub Issues](https://github.com/contextly/contextly/issues)
+- **Discord**: [Join our community](https://discord.gg/contextly)
+- **Email**: support@contextly.ai
 
 ---
 
-Made with ❤️ for the AI community
+<div align="center">
+  Made with ❤️ by the Contextly Team
+  
+  [Website](https://contextly.ai) • [Twitter](https://twitter.com/contextly_ai) • [Blog](https://blog.contextly.ai)
+</div>

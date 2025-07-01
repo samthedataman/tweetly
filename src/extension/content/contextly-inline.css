@@ -1,0 +1,368 @@
+/* Contextly Inline UI Styles - Platform-Specific Integration */
+
+/* Base styles */
+.contextly-inline-buttons {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    margin: 0 4px !important;
+}
+
+.contextly-button-group {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+}
+
+/* Remove default button styles */
+.contextly-inline-buttons button {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+}
+
+/* ChatGPT specific styles for debug inject button */
+.contextly-debug-btn {
+    display: inline-flex;
+    align-items: center;
+}
+
+/* ChatGPT button container */
+[data-testid="composer-footer-actions"] .contextly-debug-btn {
+    display: inline-flex;
+    align-items: center;
+}
+
+/* ChatGPT button styling */
+.chat\\.openai\\.com .contextly-debug-btn button,
+.chatgpt\\.com .contextly-debug-btn button {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    padding: 0 12px !important;
+    border-radius: 18px !important;
+    border: 1px solid var(--border-light, rgba(0, 0, 0, 0.1)) !important;
+    background: transparent !important;
+    color: var(--text-primary, #202123) !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    transition: all 0.15s ease !important;
+}
+
+/* ChatGPT button hover state */
+.chat\\.openai\\.com .contextly-debug-btn button:hover,
+.chatgpt\\.com .contextly-debug-btn button:hover {
+    background: var(--surface-secondary, rgba(0, 0, 0, 0.05)) !important;
+}
+
+/* Gemini specific styles */
+.gemini\\.google\\.com button.contextly-debug-btn,
+button.contextly-debug-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 8px 16px !important;
+    border-radius: 24px !important;
+    border: 1px solid #e0e0e0 !important;
+    background: white !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+    font-family: 'Google Sans Text', 'Roboto', sans-serif !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    color: #5f6368 !important;
+    line-height: 20px !important;
+    white-space: nowrap !important;
+    box-shadow: none !important;
+    height: 40px !important;
+    margin-left: 200px !important;
+}
+
+/* Gemini button hover state */
+.gemini\\.google\\.com button.contextly-debug-btn:hover,
+button.contextly-debug-btn:hover {
+    background-color: #f8f9fa !important;
+    box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15) !important;
+}
+
+/* Gemini dark mode */
+.dark-theme button.contextly-debug-btn {
+    background: #2d2e30 !important;
+    border-color: #5f6368 !important;
+    color: #e8eaed !important;
+}
+
+.dark-theme button.contextly-debug-btn:hover {
+    background-color: #3c4043 !important;
+}
+
+/* Claude.ai specific styles */
+body[class*="font-claude"] .contextly-inline-buttons button,
+.claude\\.ai .contextly-inline-buttons button {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    padding: 0 12px !important;
+    border-radius: 20px !important;
+    border: 1px solid var(--border-200) !important;
+    background: var(--bg-100) !important;
+    color: var(--text-300) !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    transition: all 0.15s ease !important;
+}
+
+body[class*="font-claude"] .contextly-inline-buttons button:hover {
+    background: var(--bg-200) !important;
+    border-color: var(--border-300) !important;
+    transform: translateY(-1px) !important;
+}
+
+body[class*="font-claude"] .contextly-inline-buttons button.active {
+    background: rgba(99, 102, 241, 0.1) !important;
+    border-color: rgba(99, 102, 241, 0.3) !important;
+    color: rgb(99, 102, 241) !important;
+}
+
+/* Hide labels on small screens for Claude */
+@media (max-width: 768px) {
+    body[class*="font-claude"] .contextly-label {
+        display: none !important;
+    }
+
+    body[class*="font-claude"] .contextly-inline-buttons button {
+        min-width: 36px !important;
+        width: 36px !important;
+        padding: 0 !important;
+    }
+}
+
+/* ChatGPT specific styles */
+[data-radix-popper-content-wrapper] .contextly-inline-buttons button,
+form[class*="composer"] .contextly-inline-buttons button,
+div[class*="relative"][class*="flex"][class*="w-full"] .contextly-inline-buttons button {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 40px !important;
+    height: 40px !important;
+    padding: 0 !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+    color: var(--text-secondary, #6b7280) !important;
+    transition: all 0.2s ease !important;
+}
+
+/* ChatGPT light theme */
+[data-theme="light"] .contextly-inline-buttons button {
+    color: #374151 !important;
+}
+
+[data-theme="light"] .contextly-inline-buttons button:hover {
+    background: #f3f4f6 !important;
+}
+
+/* ChatGPT dark theme */
+[data-theme="dark"] .contextly-inline-buttons button {
+    color: #d1d5db !important;
+}
+
+[data-theme="dark"] .contextly-inline-buttons button:hover {
+    background: #374151 !important;
+}
+
+/* ChatGPT active state */
+.contextly-inline-buttons button.active {
+    color: #10b981 !important;
+    background: rgba(16, 185, 129, 0.1) !important;
+}
+
+/* Gemini specific styles */
+.gemini\\.google\\.com .contextly-inline-buttons button,
+mat-icon-button.contextly-inline-buttons button {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    color: var(--gm-colortextbutton-ink-color, #5f6368) !important;
+    transition: all 0.2s ease !important;
+    position: relative !important;
+}
+
+.gemini\\.google\\.com .contextly-inline-buttons button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0);
+    transition: all 0.3s ease;
+}
+
+.gemini\\.google\\.com .contextly-inline-buttons button:hover::before {
+    opacity: 0.08;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.gemini\\.google\\.com .contextly-inline-buttons button.active {
+    color: #1a73e8 !important;
+}
+
+/* Transfer Panel Styles */
+.contextly-transfer-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 999999 !important;
+    backdrop-filter: blur(4px) !important;
+    animation: contextly-fade-in 0.2s ease !important;
+}
+
+.contextly-transfer-modal {
+    background: var(--bg-base, #ffffff) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+        0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+    max-width: 500px !important;
+    width: 90% !important;
+    max-height: 600px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    animation: contextly-slide-up 0.3s ease !important;
+}
+
+/* Dark mode for transfer modal */
+@media (prefers-color-scheme: dark) {
+    .contextly-transfer-modal {
+        background: #1f2937 !important;
+        color: #f3f4f6 !important;
+    }
+
+    .contextly-transfer-header {
+        border-bottom-color: #374151 !important;
+    }
+
+    .contextly-transfer-search input {
+        background: #374151 !important;
+        border-color: #4b5563 !important;
+        color: #f3f4f6 !important;
+    }
+
+    .contextly-transfer-item:hover {
+        background: #374151 !important;
+    }
+}
+
+/* Platform-specific modal adjustments */
+body[class*="font-claude"] .contextly-transfer-modal {
+    font-family: var(--font-sans) !important;
+}
+
+[data-theme="dark"] .contextly-transfer-modal {
+    background: var(--surface-primary, #1f2937) !important;
+    color: var(--text-primary, #f3f4f6) !important;
+}
+
+/* Animations */
+@keyframes contextly-fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes contextly-slide-up {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Button icons - ensure proper sizing */
+.contextly-inline-buttons svg {
+    width: 20px !important;
+    height: 20px !important;
+    display: block !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .contextly-transfer-modal {
+        width: 95% !important;
+        max-height: 80vh !important;
+        margin: 10px !important;
+    }
+
+    .contextly-inline-buttons {
+        gap: 2px !important;
+    }
+
+    .contextly-inline-buttons button {
+        min-width: 36px !important;
+        width: 36px !important;
+        height: 36px !important;
+    }
+}
+
+/* Ensure proper z-index stacking */
+.contextly-inline-buttons {
+    position: relative !important;
+    z-index: 10 !important;
+}
+
+/* Accessibility improvements */
+.contextly-inline-buttons button:focus {
+    outline: 2px solid #6366f1 !important;
+    outline-offset: 2px !important;
+}
+
+.contextly-inline-buttons button:focus:not(:focus-visible) {
+    outline: none !important;
+}
+
+/* Smooth transitions for all interactive elements */
+.contextly-inline-buttons button,
+.contextly-transfer-item,
+.contextly-close-btn {
+    transition: all 0.2s ease !important;
+}
+
+/* Ensure buttons don't interfere with typing */
+.contextly-inline-buttons {
+    pointer-events: auto !important;
+}
+
+.contextly-inline-buttons button[disabled] {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+}

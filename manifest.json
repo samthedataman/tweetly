@@ -1,37 +1,79 @@
 {
   "manifest_version": 3,
-  "name": "Tweetly",
-  "version": "1.0.0",
-  "description": "Share AI conversations on Twitter",
+  "name": "Contextly.ai",
+  "version": "1.1.0",
+  "description": "Unify AI chats from Claude, ChatGPT, Gemini into one searchable context - import past conversations easily!",
   "icons": {
-    "16": "icon16.png",
-    "48": "icon48.png",
-    "128": "icon128.png"
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   },
   "permissions": [
-    "storage"
+    "storage",
+    "activeTab",
+    "tabs",
+    "contextMenus",
+    "downloads",
+    "webNavigation",
+    "notifications",
+    "scripting"
   ],
   "host_permissions": [
     "https://claude.ai/*",
     "https://chat.openai.com/*",
     "https://chatgpt.com/*",
     "https://aistudio.google.com/*",
+    "https://gemini.google.com/*",
+    "https://api.contextly.ai/*",
     "http://localhost:8000/*"
   ],
+  "background": {
+    "service_worker": "src/extension/background/background.js"
+  },
+  "action": {
+    "default_popup": "src/extension/popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
   "content_scripts": [
     {
       "matches": [
         "https://claude.ai/*",
         "https://chat.openai.com/*",
         "https://chatgpt.com/*",
-        "https://aistudio.google.com/*"
+        "https://aistudio.google.com/*",
+        "https://gemini.google.com/*"
       ],
       "js": [
-        "content.js"
+        "src/extension/content/debug_inject.js"
       ],
-      "css": [
-        "styles.css"
-      ]
+      "css": [],
+      "run_at": "document_idle"
     }
-  ]
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "icons/*", 
+        "icons/claude.png",
+        "icons/openai.png",
+        "icons/gemini.png",
+        "*.js", 
+        "*.css",
+        "src/extension/content/inject-wallet.js",
+        "src/extension/content/content-wallet.js",
+        "connect.html",
+        "connect.js",
+        "popup-tab.html",
+        "popup-tab.js"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
 }

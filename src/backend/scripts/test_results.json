@@ -1,0 +1,45 @@
+{
+  "Auth Verify": {
+    "status": 200,
+    "success": true,
+    "response": "{\"authenticated\":false}"
+  },
+  "Wallet Registration": {
+    "status": "ERROR",
+    "success": false
+  },
+  "Twitter Auth Status": {
+    "status": 200,
+    "success": true,
+    "response": "{\"authenticated\":false,\"message\":\"X account not connected\"}"
+  },
+  "List Conversations": {
+    "status": 200,
+    "success": true,
+    "response": "{\"conversations\":[],\"total\":0,\"offset\":0,\"limit\":10}"
+  },
+  "Save Message": {
+    "status": "ERROR",
+    "success": false
+  },
+  "Conversation History": {
+    "status": "ERROR",
+    "success": false
+  },
+  "Session History": {
+    "status": "ERROR",
+    "success": false
+  },
+  "User Stats": {
+    "status": "ERROR",
+    "success": false
+  },
+  "Earnings Details": {
+    "status": "ERROR",
+    "success": false
+  },
+  "Journey Analysis": {
+    "status": "ERROR",
+    "success": false
+  }
+}

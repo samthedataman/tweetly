@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect Wallet - Contextly</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+
+        h1 {
+            margin: 0 0 10px;
+            color: #333;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .wallet-button {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            background: white;
+            cursor: pointer;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-align: left;
+        }
+
+        .wallet-button:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .wallet-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .wallet-icon {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+
+        .wallet-info h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .wallet-info p {
+            margin: 4px 0 0;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .status {
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-weight: 500;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.loading {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .connected-info {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+        }
+
+        .connected-info h3 {
+            margin: 0 0 8px;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .address {
+            font-family: monospace;
+            background: #e9ecef;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            word-break: break-all;
+            margin: 8px 0;
+        }
+
+        .network-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 8px 0;
+            font-size: 14px;
+        }
+
+        .disconnect-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 12px;
+        }
+
+        .disconnect-btn:hover {
+            background: #c82333;
+        }
+
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">💳</div>
+        <h1>Connect Wallet</h1>
+        <p class="subtitle">Connect your wallet to start earning CTXT tokens with Contextly</p>
+
+        <div id="status" class="status hidden"></div>
+
+        <div id="walletSelection">
+            <button class="wallet-button" id="connectMetaMask">
+                <div class="wallet-icon">🦊</div>
+                <div class="wallet-info">
+                    <h3>MetaMask</h3>
+                    <p>Most popular Web3 wallet</p>
+                </div>
+            </button>
+
+            <button class="wallet-button" id="connectCoinbase">
+                <div class="wallet-icon">🔵</div>
+                <div class="wallet-info">
+                    <h3>Coinbase Wallet</h3>
+                    <p>Recommended for Base network</p>
+                </div>
+            </button>
+
+            <button class="wallet-button" id="connectAny">
+                <div class="wallet-icon">🌐</div>
+                <div class="wallet-info">
+                    <h3>Other Wallet</h3>
+                    <p>Any Web3 wallet extension</p>
+                </div>
+            </button>
+        </div>
+
+        <!-- Twitter Auth Section -->
+        <div id="twitterSection" class="hidden" style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #e1e5e9;">
+            <h2 style="text-align: center; margin-bottom: 15px; color: #333;">Connect Your Social Account</h2>
+            <p style="text-align: center; color: #666; margin-bottom: 20px;">Link your Twitter/X account to enhance your Contextly experience</p>
+            
+            <button class="wallet-button" id="connectTwitter">
+                <div class="wallet-icon">𝕏</div>
+                <div class="wallet-info">
+                    <h3>Connect Twitter/X</h3>
+                    <p>Link your social account for enhanced features</p>
+                </div>
+            </button>
+        </div>
+
+        <div id="connectedInfo" class="connected-info hidden">
+            <h3>✅ Wallet Connected</h3>
+            <div class="address" id="walletAddress"></div>
+            <div class="network-info">
+                <span>Network:</span>
+                <span id="networkName"></span>
+            </div>
+            <div class="network-info">
+                <span>Wallet:</span>
+                <span id="walletType"></span>
+            </div>
+            <button class="disconnect-btn" id="disconnectBtn">Disconnect</button>
+        </div>
+
+        <div class="footer">
+            <p>Your wallet stays secure. Contextly never has access to your private keys.</p>
+        </div>
+    </div>
+
+    <script src="connect.js"></script>
+</body>
+</html>

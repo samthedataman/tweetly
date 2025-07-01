@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Contextly</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Immediate sharp rendering fix */
+        html {
+            -webkit-font-smoothing: subpixel-antialiased !important;
+            -moz-osx-font-smoothing: auto !important;
+            text-rendering: optimizeLegibility !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="popup-container">
+        <!-- Header -->
+        <div class="popup-header">
+            <div class="brand">
+                <img src="/icons/icon48.png" alt="Contextly">
+                <span class="brand-name">Contextly</span>
+            </div>
+            <span class="status-badge" id="platformStatus">Active</span>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Connect Section -->
+            <div class="connect-section">
+                <div class="connect-buttons">
+                    <button class="connect-btn" id="walletConnectBtn">
+                        <span class="connect-icon">👛</span>
+                        <span>Connect Wallet</span>
+                    </button>
+                    <button class="connect-btn" id="xConnectBtn">
+                        <span class="connect-icon">𝕏</span>
+                        <span>Connect X</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- AI Platforms Quick Launch -->
+            <div class="ai-platforms-section">
+                <div class="ai-platforms-header">Quick Launch</div>
+                <div class="ai-platforms-grid">
+                    <a href="https://chatgpt.com" target="_blank" class="ai-platform-btn chatgpt">
+                        <div class="ai-platform-logo">
+                            <img src="/icons/openai.png" alt="ChatGPT" width="24" height="24">
+                        </div>
+                        <span class="ai-platform-name">ChatGPT</span>
+                    </a>
+                    <a href="https://claude.ai" target="_blank" class="ai-platform-btn claude">
+                        <div class="ai-platform-logo">
+                            <img src="/icons/claude.png" alt="Claude" width="24" height="24">
+                        </div>
+                        <span class="ai-platform-name">Claude</span>
+                    </a>
+                    <a href="https://gemini.google.com" target="_blank" class="ai-platform-btn gemini">
+                        <div class="ai-platform-logo">
+                            <img src="/icons/gemini.png" alt="Gemini" width="24" height="24">
+                        </div>
+                        <span class="ai-platform-name">Gemini</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Mode Toggle -->
+            <div class="mode-section" id="modeSection">
+                <div>
+                    <div class="mode-label" id="modeLabel">Free Mode</div>
+                    <div class="mode-desc">Enable to start earning CTXT</div>
+                </div>
+                <div class="toggle-switch" id="modeToggle">
+                    <div class="toggle-slider"></div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="actions-grid">
+                <div class="action-card" data-action="import">
+                    <span class="action-icon">📥</span>
+                    <div class="action-title">Import</div>
+                    <div class="action-desc">Add past chats</div>
+                </div>
+                <div class="action-card" data-action="search">
+                    <span class="action-icon">🔍</span>
+                    <div class="action-title">Search</div>
+                    <div class="action-desc">Find anything</div>
+                </div>
+                <div class="action-card" data-action="export">
+                    <span class="action-icon">📤</span>
+                    <div class="action-title">Export</div>
+                    <div class="action-desc">Download chats</div>
+                </div>
+                <div class="action-card" data-action="share">
+                    <span class="action-icon">🔗</span>
+                    <div class="action-title">Share</div>
+                    <div class="action-desc">Create link</div>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-row">
+                <div class="stat">
+                    <div class="stat-value" id="conversationCount">0</div>
+                    <div class="stat-label">Chats</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="ctxtBalance">0</div>
+                    <div class="stat-label">CTXT</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="dayStreak">0</div>
+                    <div class="stat-label">Streak</div>
+                </div>
+            </div>
+
+            <!-- Import Section -->
+            <div class="import-section">
+                <div class="import-title">Unify Your AI Conversations</div>
+                <div class="import-desc">Import chats from Claude, ChatGPT, and Gemini into one searchable history</div>
+                <button class="import-btn" id="importBtn">Import Conversations</button>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="popup-footer">
+            <div class="footer-links">
+                <a href="#" class="footer-link" id="settingsLink">Settings</a>
+                <a href="#" class="footer-link" id="helpLink">Help</a>
+            </div>
+            <span class="footer-link" id="versionInfo">v1.1.0</span>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loading" style="display: none;">
+            <div class="loading-spinner"></div>
+        </div>
+
+        <!-- Wallet Modal -->
+        <div class="modal-overlay" id="walletModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Connect Wallet</h3>
+                    <button class="modal-close" id="closeWalletModal">×</button>
+                </div>
+                
+                <div class="wallet-options">
+                    <div class="wallet-option" data-wallet="coinbase">
+                        <div class="wallet-icon">
+                            <img src="https://avatars.githubusercontent.com/u/1885080?s=200&v=4" alt="Coinbase">
+                        </div>
+                        <div>
+                            <div class="wallet-name">Coinbase Wallet</div>
+                            <div class="wallet-desc">Recommended</div>
+                        </div>
+                    </div>
+                    
+                    <div class="wallet-option" data-wallet="metamask">
+                        <div class="wallet-icon">🦊</div>
+                        <div>
+                            <div class="wallet-name">MetaMask</div>
+                            <div class="wallet-desc">Browser extension</div>
+                        </div>
+                    </div>
+                    
+                    <div class="wallet-option" data-wallet="walletconnect">
+                        <div class="wallet-icon">🔗</div>
+                        <div>
+                            <div class="wallet-name">WalletConnect</div>
+                            <div class="wallet-desc">Mobile wallets</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Container -->
+        <div id="toastContainer"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../services/walletService.js"></script>
+    <script src="../services/lancedbService.js"></script>
+    <script src="../wallet/MetaMaskConnector.bundle.js"></script>
+    <script src="popup_simple.js"></script>
+</body>
+</html>

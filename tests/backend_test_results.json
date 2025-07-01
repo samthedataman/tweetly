@@ -1,0 +1,300 @@
+{
+  "total_tests": 16,
+  "passed_tests": 12,
+  "failed_tests": 4,
+  "success_rate": 75.0,
+  "categories": {
+    "Connectivity": [
+      {
+        "test": "Basic Connectivity",
+        "success": true,
+        "message": "API responding - Contextly.ai Enhanced API v3.0.0",
+        "timestamp": "2025-06-30T15:27:33.310250",
+        "data": {
+          "service": "Contextly.ai Enhanced API",
+          "version": "3.0.0",
+          "status": "operational",
+          "features": {
+            "vector_db": "LanceDB Cloud with advanced indexing",
+            "graph_rag": "Knowledge graph construction and querying",
+            "summarization": "Intelligent conversation summarization",
+            "multimodal": "Support for text, code, and images",
+            "cache": "Upstash Redis"
+          }
+        }
+      }
+    ],
+    "Authentication": [
+      {
+        "test": "Twitter Auth Detection",
+        "success": true,
+        "message": "Mode: development",
+        "timestamp": "2025-06-30T15:27:33.321307",
+        "data": {
+          "status": "working",
+          "message": "X auth endpoint is responding",
+          "dev_mode": true,
+          "auth_type": "development"
+        }
+      },
+      {
+        "test": "Twitter Auth Status",
+        "success": true,
+        "message": "Status check successful",
+        "timestamp": "2025-06-30T15:27:33.322285",
+        "data": {
+          "authenticated": false,
+          "message": "X account not connected"
+        }
+      },
+      {
+        "test": "Wallet Registration",
+        "success": true,
+        "message": "Endpoint working (correctly rejects invalid signature)",
+        "timestamp": "2025-06-30T15:27:33.327176",
+        "data": null
+      }
+    ],
+    "Data Storage": [
+      {
+        "test": "Message Storage",
+        "success": false,
+        "message": "Known schema issue (user_id field missing)",
+        "timestamp": "2025-06-30T15:27:34.854719",
+        "data": null
+      }
+    ],
+    "Data Retrieval": [
+      {
+        "test": "Conversation List",
+        "success": true,
+        "message": "Retrieved 0 conversations",
+        "timestamp": "2025-06-30T15:27:33.375277",
+        "data": {
+          "total": 0,
+          "count": 0
+        }
+      },
+      {
+        "test": "Conversation History",
+        "success": true,
+        "message": "Retrieved 0 messages",
+        "timestamp": "2025-06-30T15:27:33.568193",
+        "data": null
+      },
+      {
+        "test": "User Stats",
+        "success": false,
+        "message": "User not found (expected for test user)",
+        "timestamp": "2025-06-30T15:27:35.279108",
+        "data": null
+      },
+      {
+        "test": "Session History",
+        "success": true,
+        "message": "Retrieved 0 sessions",
+        "timestamp": "2025-06-30T15:27:35.427605",
+        "data": null
+      }
+    ],
+    "Embeddings/AI": [
+      {
+        "test": "Graph Building",
+        "success": false,
+        "message": "No conversation data found",
+        "timestamp": "2025-06-30T15:27:34.873747",
+        "data": null
+      },
+      {
+        "test": "Graph Querying",
+        "success": true,
+        "message": "Query processed: 0 results",
+        "timestamp": "2025-06-30T15:27:34.990551",
+        "data": null
+      },
+      {
+        "test": "Graph Visualization",
+        "success": true,
+        "message": "Visualization data retrieved",
+        "timestamp": "2025-06-30T15:27:35.274689",
+        "data": null
+      },
+      {
+        "test": "Insights Generation",
+        "success": true,
+        "message": "Insights generated successfully",
+        "timestamp": "2025-06-30T15:27:35.373584",
+        "data": null
+      }
+    ],
+    "Other": [
+      {
+        "test": "Journey Analysis",
+        "success": false,
+        "message": "User not found (expected for test user)",
+        "timestamp": "2025-06-30T15:27:34.858210",
+        "data": null
+      },
+      {
+        "test": "Sankey Generation",
+        "success": true,
+        "message": "Sankey diagram data retrieved",
+        "timestamp": "2025-06-30T15:27:34.871561",
+        "data": null
+      },
+      {
+        "test": "Auto-mode Status",
+        "success": true,
+        "message": "Auto-mode data retrieved",
+        "timestamp": "2025-06-30T15:27:35.281890",
+        "data": {
+          "auto_mode_enabled": false,
+          "earnings_display": null,
+          "current_earnings": 0.0,
+          "session_id": null
+        }
+      }
+    ]
+  },
+  "results": [
+    {
+      "test": "Basic Connectivity",
+      "success": true,
+      "message": "API responding - Contextly.ai Enhanced API v3.0.0",
+      "timestamp": "2025-06-30T15:27:33.310250",
+      "data": {
+        "service": "Contextly.ai Enhanced API",
+        "version": "3.0.0",
+        "status": "operational",
+        "features": {
+          "vector_db": "LanceDB Cloud with advanced indexing",
+          "graph_rag": "Knowledge graph construction and querying",
+          "summarization": "Intelligent conversation summarization",
+          "multimodal": "Support for text, code, and images",
+          "cache": "Upstash Redis"
+        }
+      }
+    },
+    {
+      "test": "Twitter Auth Detection",
+      "success": true,
+      "message": "Mode: development",
+      "timestamp": "2025-06-30T15:27:33.321307",
+      "data": {
+        "status": "working",
+        "message": "X auth endpoint is responding",
+        "dev_mode": true,
+        "auth_type": "development"
+      }
+    },
+    {
+      "test": "Twitter Auth Status",
+      "success": true,
+      "message": "Status check successful",
+      "timestamp": "2025-06-30T15:27:33.322285",
+      "data": {
+        "authenticated": false,
+        "message": "X account not connected"
+      }
+    },
+    {
+      "test": "Wallet Registration",
+      "success": true,
+      "message": "Endpoint working (correctly rejects invalid signature)",
+      "timestamp": "2025-06-30T15:27:33.327176",
+      "data": null
+    },
+    {
+      "test": "Conversation List",
+      "success": true,
+      "message": "Retrieved 0 conversations",
+      "timestamp": "2025-06-30T15:27:33.375277",
+      "data": {
+        "total": 0,
+        "count": 0
+      }
+    },
+    {
+      "test": "Conversation History",
+      "success": true,
+      "message": "Retrieved 0 messages",
+      "timestamp": "2025-06-30T15:27:33.568193",
+      "data": null
+    },
+    {
+      "test": "Message Storage",
+      "success": false,
+      "message": "Known schema issue (user_id field missing)",
+      "timestamp": "2025-06-30T15:27:34.854719",
+      "data": null
+    },
+    {
+      "test": "Journey Analysis",
+      "success": false,
+      "message": "User not found (expected for test user)",
+      "timestamp": "2025-06-30T15:27:34.858210",
+      "data": null
+    },
+    {
+      "test": "Sankey Generation",
+      "success": true,
+      "message": "Sankey diagram data retrieved",
+      "timestamp": "2025-06-30T15:27:34.871561",
+      "data": null
+    },
+    {
+      "test": "Graph Building",
+      "success": false,
+      "message": "No conversation data found",
+      "timestamp": "2025-06-30T15:27:34.873747",
+      "data": null
+    },
+    {
+      "test": "Graph Querying",
+      "success": true,
+      "message": "Query processed: 0 results",
+      "timestamp": "2025-06-30T15:27:34.990551",
+      "data": null
+    },
+    {
+      "test": "Graph Visualization",
+      "success": true,
+      "message": "Visualization data retrieved",
+      "timestamp": "2025-06-30T15:27:35.274689",
+      "data": null
+    },
+    {
+      "test": "User Stats",
+      "success": false,
+      "message": "User not found (expected for test user)",
+      "timestamp": "2025-06-30T15:27:35.279108",
+      "data": null
+    },
+    {
+      "test": "Auto-mode Status",
+      "success": true,
+      "message": "Auto-mode data retrieved",
+      "timestamp": "2025-06-30T15:27:35.281890",
+      "data": {
+        "auto_mode_enabled": false,
+        "earnings_display": null,
+        "current_earnings": 0.0,
+        "session_id": null
+      }
+    },
+    {
+      "test": "Insights Generation",
+      "success": true,
+      "message": "Insights generated successfully",
+      "timestamp": "2025-06-30T15:27:35.373584",
+      "data": null
+    },
+    {
+      "test": "Session History",
+      "success": true,
+      "message": "Retrieved 0 sessions",
+      "timestamp": "2025-06-30T15:27:35.427605",
+      "data": null
+    }
+  ]
+}
