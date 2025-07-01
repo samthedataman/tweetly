@@ -217,6 +217,18 @@ class EnhancedPopup {
         earnMode: true  // Always enabled for new wallet connections
       });
       
+      // Notify all tabs that auth token is updated
+      chrome.tabs.query({}, (tabs) => {
+        tabs.forEach(tab => {
+          chrome.tabs.sendMessage(tab.id, {
+            type: 'AUTH_TOKEN_UPDATED',
+            authToken: this.authToken
+          }).catch(() => {
+            // Ignore errors for tabs without content script
+          });
+        });
+      });
+      
       console.log('🎨 Updating UI after wallet connection...');
       
       // Update UI
@@ -488,6 +500,30 @@ class EnhancedPopup {
 
   async disconnectWallet() {
     try {
+      // Notify backend about disconnection if we have a token
+      if (this.authToken) {
+        console.log('🔌 Notifying backend about wallet disconnection...');
+        try {
+          const response = await fetch(`${this.API_BASE}/v1/wallet/disconnect`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${this.authToken}`
+            }
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            console.log('✅ Backend notified of disconnection:', result);
+          } else {
+            console.log('⚠️ Backend notification failed:', response.status);
+          }
+        } catch (error) {
+          console.log('⚠️ Could not notify backend:', error);
+          // Continue with local disconnection even if backend fails
+        }
+      }
+      
       // Clear storage
       await chrome.storage.local.remove(['wallet', 'authToken', 'earnMode']);
       

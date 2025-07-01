@@ -1,6 +1,32 @@
 // Debug injection script with dropdown functionality and conversation capture
 console.log('🚀 DEBUG: Script loaded');
 
+// Add visual indicator that script is loaded
+const indicator = document.createElement('div');
+indicator.textContent = '✅ Contextly Active';
+indicator.style.cssText = 'position: fixed; bottom: 10px; right: 10px; background: #4CAF50; color: white; padding: 5px 10px; border-radius: 5px; z-index: 9999; font-size: 12px;';
+document.body.appendChild(indicator);
+setTimeout(() => indicator.remove(), 3000); // Remove after 3 seconds
+
+// Store logs in window for debugging
+window.contextlyLogs = [];
+const originalLog = console.log;
+console.log = function(...args) {
+    window.contextlyLogs.push(args.join(' '));
+    originalLog.apply(console, args);
+};
+
+// Listen for auth token updates
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'AUTH_TOKEN_UPDATED') {
+        console.log('🔑 Auth token updated! Reloading to apply changes...');
+        // Store the new token and reload to ensure it's used
+        chrome.storage.local.set({ authToken: message.authToken }, () => {
+            location.reload();
+        });
+    }
+});
+
 let autoContextlyEnabled = false;
 let earnMode = true; // Default to earn mode enabled - users earn CTXT tokens automatically
 let conversationHistory = [];

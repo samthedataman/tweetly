@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "Contextly",
+  "version": "1.0.0",
+  "description": "Capture and analyze your AI conversations",
+  "permissions": [
+    "storage",
+    "tabs",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://claude.ai/*",
+    "https://chat.openai.com/*",
+    "https://gemini.google.com/*",
+    "http://localhost:8000/*"
+  ],
+  "background": {
+    "service_worker": "background/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://claude.ai/*",
+        "https://chat.openai.com/*",
+        "https://gemini.google.com/*"
+      ],
+      "js": ["content/debug_inject.js"],
+      "css": ["content/contextly-inline.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "128": "contextly-avatar.png"
+    }
+  },
+  "icons": {
+    "128": "contextly-avatar.png"
+  }
+}

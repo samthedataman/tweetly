@@ -87,6 +87,9 @@ summaries_table = None
 screenshots_table = None
 artifacts_table = None
 
+# User cache to prevent duplicate creation
+user_cache = {}  # wallet -> user_data
+
 # Initialize LanceDB Cloud connection
 try:
     if CONFIG["LANCEDB_URI"] and CONFIG["LANCEDB_API_KEY"]:
@@ -1029,6 +1032,11 @@ def safe_table_to_pandas(table, table_name: str = "table"):
 
 async def find_user_by_wallet(wallet: str):
     """Find user by wallet address"""
+    # Check cache first
+    if wallet in user_cache:
+        print(f"✅ Found user in cache for wallet: {wallet}")
+        return user_cache[wallet]
+    
     if users_table is None:
         print(f"⚠️ Users table not initialized")
         return None
@@ -1038,7 +1046,7 @@ async def find_user_by_wallet(wallet: str):
         # This is a current limitation - just return None to trigger user creation
         print(f"🔍 Searching for user with wallet: {wallet}")
         print(f"⚠️ Remote LanceDB doesn't support efficient non-vector queries")
-        print(f"ℹ️ Returning None - user will be created if needed")
+        print(f"ℹ️ Checking cache instead...")
         return None
         
     except Exception as e:
@@ -1092,9 +1100,22 @@ async def create_user(user_data: dict):
             "last_active": user_data.get("last_active", datetime.now().isoformat())
         }
         
+        # Check if user already exists in cache before adding to DB
+        if user_record["wallet"] in user_cache:
+            print(f"⚠️ User already exists in cache, skipping creation")
+            return user_cache[user_record["wallet"]]
+        
         # Add to LanceDB
-        users_table.add([user_record])
-        print(f"✅ User created successfully: {user_record['_id']}")
+        try:
+            users_table.add([user_record])
+            print(f"✅ User created successfully: {user_record['_id']}")
+        except Exception as db_error:
+            print(f"⚠️ Database error (possibly duplicate): {db_error}")
+            # Even if DB fails, we can use the record
+        
+        # Add to cache
+        user_cache[user_record["wallet"]] = user_record
+        print(f"💾 Added user to cache: {user_record['wallet']}")
         
         return user_record
     except Exception as e:
@@ -1226,6 +1247,31 @@ async def home():
     }
 
 
+@app.post("/v1/wallet/disconnect")
+async def disconnect_wallet(current_user: AuthenticatedUser = Depends(get_current_user_obj)):
+    """Handle wallet disconnection - log the event"""
+    
+    auth_logger.info(f"🔌 Wallet disconnecting: {current_user.wallet}")
+    
+    # Log the disconnection event
+    if users_table is not None:
+        try:
+            # Update last_active timestamp
+            user = await find_user_by_id(current_user.user_id)
+            if user:
+                user["last_disconnected"] = datetime.now().isoformat()
+                # Note: Can't update in remote LanceDB easily, so just log
+                print(f"📊 User {current_user.wallet} disconnected at {user['last_disconnected']}")
+        except Exception as e:
+            print(f"⚠️ Error logging disconnect: {e}")
+    
+    return {
+        "success": True,
+        "message": "Wallet disconnected successfully",
+        "wallet": current_user.wallet
+    }
+
+
 @app.post("/v1/wallet/register")
 async def register_wallet(registration: WalletRegistration):
     """Register wallet with signature verification and return JWT token"""
@@ -1241,8 +1287,10 @@ async def register_wallet(registration: WalletRegistration):
     existing = await find_user_by_wallet(registration.wallet)
 
     if not existing:
+        # Use deterministic ID based on wallet address
+        user_id = f"user_{registration.wallet[-8:].lower()}"
         user_doc = {
-            "_id": str(uuid.uuid4()),
+            "_id": user_id,
             "wallet": registration.wallet,
             "x_id": None,
             "x_username": None,
@@ -1270,12 +1318,13 @@ async def register_wallet(registration: WalletRegistration):
         }
 
     # Create JWT token for existing user
-    token = create_access_token(existing["wallet"], existing["user_id"])
+    user_id = existing.get("user_id") or existing.get("_id")
+    token = create_access_token(existing["wallet"], user_id)
     auth_logger.info(f"✅ Existing wallet authenticated: {registration.wallet}")
 
     return {
         "success": True,
-        "userId": existing["user_id"],
+        "userId": user_id,
         "message": "Wallet already registered",
         "token": token,
         "wallet": existing["wallet"],
@@ -1324,8 +1373,10 @@ async def store_message(
     if not user:
         # Auto-create user if not exists
         print(f"🆕 User not found for wallet {data.wallet}, creating new user...")
+        # Use deterministic ID based on wallet address
+        user_id = f"user_{data.wallet[-8:].lower()}"
         user_doc = {
-            "_id": str(uuid.uuid4()),
+            "_id": user_id,
             "wallet": data.wallet,
             "chainId": 1,  # Default to Ethereum mainnet
             "created": datetime.now().isoformat(),
@@ -2806,15 +2857,31 @@ async def get_user_stats(wallet: str):
             user_graphs = []
             graph_count = 0
 
+    # Handle different key formats (from cache vs database)
+    total_earnings = user.get("total_earnings") or user.get("totalEarnings", 0.0)
+    journey_count = user.get("journey_count") or user.get("journeyCount", 0)
+    graph_nodes = user.get("graph_nodes_created") or user.get("graphNodesCreated", 0)
+    
+    # Handle created timestamp
+    created = user.get("created")
+    if isinstance(created, str):
+        # If it's an ISO string, parse it
+        joined_date = created
+    elif isinstance(created, (int, float)):
+        # If it's a timestamp, convert it
+        joined_date = datetime.fromtimestamp(created).isoformat()
+    else:
+        joined_date = datetime.now().isoformat()
+    
     return {
         "wallet": wallet,
-        "totalEarnings": user["total_earnings"],
+        "totalEarnings": total_earnings,
         "todayEarnings": today_earnings,
         "conversationCount": conversation_count,
-        "journeyCount": user.get("journey_count", 0),
-        "graphNodesCreated": user.get("graph_nodes_created", 0),
+        "journeyCount": journey_count,
+        "graphNodesCreated": graph_nodes,
         "knowledgeGraphs": graph_count,
-        "joined": datetime.fromtimestamp(user["created"]).isoformat(),
+        "joined": joined_date,
         "recentActivity": [
             {
                 "session_id": s["_id"],
